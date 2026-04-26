@@ -1,0 +1,270 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import {
+  Trip, Group, FilterState, ScheduledRange,
+  TripCategory, Theme,
+  DEFAULT_GROUPS, DEFAULT_CATEGORIES, GROUP_COLOR_PALETTE,
+} from "@/types";
+
+// ─── Seed data ────────────────────────────────────────────────────────────────
+
+const SEED_TRIPS: Trip[] = [
+  {
+    id: "trip-1", title: "Tokyo Adventure", destination: "Tokyo, Japan",
+    continent: "Asia", groupId: "family", categoryId: "city",
+    status: "unscheduled", durationWeeks: 2, tags: ["food", "culture"],
+  },
+  {
+    id: "trip-2", title: "Amalfi Coast", destination: "Amalfi, Italy",
+    continent: "Europe", groupId: "couples", categoryId: "beach",
+    status: "unscheduled", durationWeeks: 1, tags: ["food"],
+  },
+  {
+    id: "trip-3", title: "Patagonia Trek", destination: "Patagonia, Argentina",
+    continent: "South America", groupId: "solo", categoryId: "hiking",
+    status: "unscheduled", durationWeeks: 3,
+  },
+  {
+    id: "trip-4", title: "Safari", destination: "Serengeti, Tanzania",
+    continent: "Africa", groupId: "family", categoryId: "safari",
+    status: "unscheduled", durationWeeks: 2,
+  },
+];
+
+const SEED_ORDER = SEED_TRIPS.map((t) => t.id);
+
+// ─── Store shape ──────────────────────────────────────────────────────────────
+
+type TripStore = {
+  trips: Trip[];
+  tripOrder: string[];   // ordered list of trip IDs for sidebar
+  groups: Group[];
+  categories: TripCategory[];
+  filters: FilterState;
+  theme: Theme;
+
+  addTrip: (trip: Trip) => void;
+  updateTrip: (id: string, updates: Partial<Trip>) => void;
+  removeTrip: (id: string) => void;
+  reorderTrips: (orderedIds: string[]) => void;
+  scheduleTrip: (id: string, range: ScheduledRange) => void;
+  unscheduleTrip: (id: string) => void;
+  bookTrip: (id: string) => void;
+  unbookTrip: (id: string) => void;
+  completeTrip: (id: string) => void;
+  uncompleteTrip: (id: string) => void;
+
+  addGroup: (group: Omit<Group, "color"> & { color?: string }) => void;
+  updateGroup: (id: string, updates: Partial<Group>) => void;
+  removeGroup: (id: string) => void;
+  setDefaultGroup: (id: string) => void;
+
+  addCategory: (category: TripCategory) => void;
+  updateCategory: (id: string, updates: Partial<TripCategory>) => void;
+  removeCategory: (id: string) => void;
+
+  setGroupFilter: (groupIds: string[]) => void;
+  setContinentFilter: (continents: FilterState["continents"]) => void;
+  setStatusFilter: (statuses: FilterState["statuses"]) => void;
+  setCategoryFilter: (categoryIds: string[]) => void;
+  toggleShowCompleted: () => void;
+  clearFilters: () => void;
+
+  toggleTheme: () => void;
+};
+
+function getNextColor(usedColors: string[]): string {
+  const available = GROUP_COLOR_PALETTE.filter((c) => !usedColors.includes(c));
+  return available.length > 0
+    ? available[0]
+    : GROUP_COLOR_PALETTE[usedColors.length % GROUP_COLOR_PALETTE.length];
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+export const useTripStore = create<TripStore>()(
+  persist(
+    (set, get) => ({
+      trips: SEED_TRIPS,
+      tripOrder: SEED_ORDER,
+      groups: DEFAULT_GROUPS,
+      categories: DEFAULT_CATEGORIES,
+      theme: "light",
+      filters: {
+        groupIds: [], continents: [], statuses: [],
+        categoryIds: [], showCompleted: false,
+      },
+
+      addTrip: (trip) =>
+        set((s) => ({
+          trips: [...s.trips, trip],
+          tripOrder: [...s.tripOrder, trip.id],
+        })),
+
+      updateTrip: (id, updates) =>
+        set((s) => ({
+          trips: s.trips.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        })),
+
+      removeTrip: (id) =>
+        set((s) => ({
+          trips: s.trips.filter((t) => t.id !== id),
+          tripOrder: s.tripOrder.filter((oid) => oid !== id),
+        })),
+
+      reorderTrips: (orderedIds) =>
+        set({ tripOrder: orderedIds }),
+
+      scheduleTrip: (id, range) =>
+        set((s) => ({
+          trips: s.trips.map((t) =>
+            t.id === id ? { ...t, scheduled: range, status: "planning" } : t
+          ),
+        })),
+
+      unscheduleTrip: (id) =>
+        set((s) => ({
+          trips: s.trips.map((t) =>
+            t.id === id ? { ...t, scheduled: undefined, status: "unscheduled" } : t
+          ),
+        })),
+
+      bookTrip: (id) =>
+        set((s) => ({
+          trips: s.trips.map((t) => (t.id === id ? { ...t, status: "booked" } : t)),
+        })),
+
+      unbookTrip: (id) =>
+        set((s) => ({
+          trips: s.trips.map((t) => (t.id === id ? { ...t, status: "planning" } : t)),
+        })),
+
+      completeTrip: (id) =>
+        set((s) => ({
+          trips: s.trips.map((t) => (t.id === id ? { ...t, status: "completed" } : t)),
+        })),
+
+      uncompleteTrip: (id) =>
+        set((s) => ({
+          trips: s.trips.map((t) => (t.id === id ? { ...t, status: "planning" } : t)),
+        })),
+
+      addGroup: (groupInput) => {
+        const usedColors = get().groups.map((g) => g.color);
+        const color = groupInput.color ?? getNextColor(usedColors);
+        set((s) => ({ groups: [...s.groups, { ...groupInput, color }] }));
+      },
+
+      updateGroup: (id, updates) =>
+        set((s) => ({
+          groups: s.groups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        })),
+
+      removeGroup: (id) =>
+        set((s) => ({
+          groups: s.groups.filter((g) => g.id !== id),
+          filters: { ...s.filters, groupIds: s.filters.groupIds.filter((gid) => gid !== id) },
+        })),
+
+      setDefaultGroup: (id) =>
+        set((s) => ({
+          groups: s.groups.map((g) => ({ ...g, isDefault: g.id === id })),
+        })),
+
+      addCategory: (category) =>
+        set((s) => ({ categories: [...s.categories, category] })),
+
+      updateCategory: (id, updates) =>
+        set((s) => ({
+          categories: s.categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        })),
+
+      removeCategory: (id) =>
+        set((s) => ({
+          categories: s.categories.filter((c) => c.id !== id),
+          filters: { ...s.filters, categoryIds: s.filters.categoryIds.filter((cid) => cid !== id) },
+        })),
+
+      setGroupFilter: (groupIds) =>
+        set((s) => ({ filters: { ...s.filters, groupIds } })),
+
+      setContinentFilter: (continents) =>
+        set((s) => ({ filters: { ...s.filters, continents } })),
+
+      setStatusFilter: (statuses) =>
+        set((s) => ({ filters: { ...s.filters, statuses } })),
+
+      setCategoryFilter: (categoryIds) =>
+        set((s) => ({ filters: { ...s.filters, categoryIds } })),
+
+      toggleShowCompleted: () =>
+        set((s) => ({
+          filters: { ...s.filters, showCompleted: !s.filters.showCompleted },
+        })),
+
+      clearFilters: () =>
+        set({
+          filters: {
+            groupIds: [], continents: [], statuses: [],
+            categoryIds: [], showCompleted: false,
+          },
+        }),
+
+      toggleTheme: () =>
+        set((s) => {
+          const next = s.theme === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          return { theme: next };
+        }),
+    }),
+    {
+      name: "trip-planner-storage",
+      merge: (persisted: any, current) => ({
+        ...current,
+        ...persisted,
+        tripOrder: persisted?.tripOrder ?? (persisted?.trips ?? current.trips).map((t: Trip) => t.id),
+        filters: {
+          groupIds: [], continents: [], statuses: [],
+          categoryIds: [], showCompleted: false,
+          ...(persisted?.filters ?? {}),
+        },
+        categories: persisted?.categories ?? current.categories,
+        theme: persisted?.theme ?? "dark",
+        groups: (persisted?.groups ?? current.groups).map((g: any) => ({
+          isDefault: false, ...g,
+        })),
+      }),
+    }
+  )
+);
+
+// ─── Selectors ────────────────────────────────────────────────────────────────
+
+export const selectUnscheduledTrips = (
+  trips: Trip[],
+  tripOrder: string[],
+  filters: FilterState
+) => {
+  const ordered = tripOrder
+    .map((id) => trips.find((t) => t.id === id))
+    .filter((t): t is Trip => !!t && t.status === "unscheduled");
+
+  return ordered.filter((t) => {
+    if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
+    if (filters.continents.length && t.continent && !filters.continents.includes(t.continent)) return false;
+    if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
+    return true;
+  });
+};
+
+export const selectScheduledTrips = (trips: Trip[], filters: FilterState) =>
+  trips.filter((t) => {
+    if (!t.scheduled) return false;
+    if (t.status === "unscheduled") return false;
+    if (t.status === "completed" && !filters.showCompleted) return false;
+    if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
+    if (filters.continents.length && t.continent && !filters.continents.includes(t.continent)) return false;
+    if (filters.statuses.length && !filters.statuses.includes(t.status)) return false;
+    if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
+    return true;
+  });

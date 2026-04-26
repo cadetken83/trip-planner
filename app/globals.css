@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* ── Dark theme ──────────────────────────────────────────────────────────────
+   Problems seen in screenshot:
+   - Cells blend into panel — need more surface differentiation
+   - Month labels, text nearly invisible
+   - Borders too subtle
+   - Density strip invisible
+   Fix: widen surface steps, lift all text tones, strengthen borders
+────────────────────────────────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --font-display: var(--font-playfair);
+  --font-body: var(--font-geist);
+
+  /* Wider surface spread — cells clearly distinct from panel */
+  --surface-0: #0a0908;   /* page bg — very dark */
+  --surface-1: #1a1714;   /* sidebar / header panels */
+  --surface-2: #2e2926;   /* month cells — noticeably lighter than panel */
+  --surface-3: #46403c;   /* inputs, hover states */
+
+  /* Borders — clearly visible */
+  --border:        #6b6460;  /* was #44403c — much more visible */
+  --border-subtle: #3d3835;  /* cell borders */
+
+  /* Text — high contrast at every level */
+  --text-primary:   #f5f4f2;  /* headings, trip names */
+  --text-secondary: #d4cdc8;  /* destinations, labels — was #a8a29e, much lighter */
+  --text-muted:     #a89f99;  /* duration, tags, month names — was #78716c */
+
+  /* Accent */
+  --accent:     #fbbf24;  /* bright amber */
+  --accent-dim: #78350f;
+
+  --scrollbar-track: #1a1714;
+  --scrollbar-thumb: #6b6460;
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────────
+   Problems seen in screenshot:
+   - "Clear Filters" blends in
+   - Filter labels faint
+   - Generally acceptable but needs stronger secondary/muted text
+   Fix: darken text-secondary and text-muted, make Clear Filters always red
+────────────────────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --surface-0: #edeae4;
+  --surface-1: #f7f4ef;
+  --surface-2: #ffffff;
+  --surface-3: #e2dcd4;
+
+  --border:        #a09890;  /* clearly visible borders */
+  --border-subtle: #ccc6bc;
+
+  /* Strongly readable text */
+  --text-primary:   #0f0e0c;
+  --text-secondary: #2a2520;  /* was #3d3530 — darker */
+  --text-muted:     #4a4540;  /* was #6b6460 — much darker */
+
+  --accent:     #92400e;  /* dark amber — good contrast on light */
+  --accent-dim: #fef3c7;
+
+  --scrollbar-track: #e2dcd4;
+  --scrollbar-thumb: #a09890;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────────*/
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body), sans-serif;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────────*/
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb  { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Utilities ───────────────────────────────────────────────────────────────*/
+.font-display { font-family: var(--font-display), serif; }
+
+/* Theme-aware hover */
+.hover-surface:hover { background: var(--surface-3) !important; }
+
+/* Inputs and selects inherit theme */
+select, option { background: var(--surface-3); color: var(--text-primary); }
+::placeholder  { color: var(--text-muted); opacity: 1; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
