@@ -441,7 +441,7 @@ export default function TripsListPanel() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-              style={{ color: "var(--text-muted)", letterSpacing: "0.07em", width: "82px" }}>Status</span>
+              style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Status</span>
             {STATUS_ORDER.map((s) => (
               <Pill key={s} active={statusFilter.includes(s)} color={STATUS_META[s].color}
                 onClick={() => toggle(statusFilter, s, setStatusFilter)}>
@@ -453,7 +453,7 @@ export default function TripsListPanel() {
           {groups.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", width: "82px" }}>Travel Group</span>
+                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Travel Group</span>
               {groups.map((g) => (
                 <Pill key={g.id} active={groupFilter.includes(g.id)} color={g.color}
                   onClick={() => toggle(groupFilter, g.id, setGroupFilter)}>
@@ -467,7 +467,7 @@ export default function TripsListPanel() {
           {categories.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", width: "82px" }}>Travel Type</span>
+                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Travel Type</span>
               {categories.map((c) => (
                 <Pill key={c.id} active={categoryFilter.includes(c.id)} color="var(--accent)"
                   onClick={() => toggle(categoryFilter, c.id, setCategoryFilter)}>
@@ -480,7 +480,7 @@ export default function TripsListPanel() {
           {availableYears.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", width: "82px" }}>Year</span>
+                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Year</span>
               {availableYears.map((y) => (
                 <Pill key={y} active={yearFilter.includes(y)} color="var(--accent)"
                   onClick={() => toggle(yearFilter, y, setYearFilter)}>
