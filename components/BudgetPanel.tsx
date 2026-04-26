@@ -341,6 +341,25 @@ export default function BudgetPanel() {
                   </div>
                 )}
 
+                {/* Past year over-allocated banner */}
+                {isPast && alloc > 0 && alloc > spent && !isOver && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-1.5"
+                    style={{ background: "rgba(245,158,11,0.08)", borderBottom: "1px solid rgba(245,158,11,0.18)" }}>
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle size={12} color="#f59e0b" />
+                      <span className="text-xs" style={{ color: "#f59e0b" }}>
+                        {fmt(alloc - spent, currency)} of {year} allocation unused — actual spend was {fmt(spent, currency)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setAnnualAllocation(year, spent)}
+                      className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-md transition-opacity hover:opacity-80"
+                      style={{ background: "rgba(245,158,11,0.18)", color: "#f59e0b", whiteSpace: "nowrap" }}>
+                      Set to {fmt(spent, currency)}
+                    </button>
+                  </div>
+                )}
+
                 <div className="grid px-4 py-3 items-center"
                   style={{ gridTemplateColumns: "72px 1fr 130px 110px 110px", gap: "12px" }}>
 
