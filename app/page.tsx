@@ -5,20 +5,21 @@ import PlannerView from "@/components/PlannerView";
 import FilterBar from "@/components/FilterBar";
 import HistoryPanel from "@/components/HistoryPanel";
 import TripsListPanel from "@/components/TripsListPanel";
+import BudgetPanel from "@/components/BudgetPanel";
 import PastTripPrompt from "@/components/PastTripPrompt";
 import { useTripStore } from "@/store/useTripStore";
-import { CalendarDays, Clock, Download, List, Moon, Sun, Upload } from "lucide-react";
+import { CalendarDays, Clock, Download, List, Moon, Sun, Upload, Wallet } from "lucide-react";
 
-type View = "planner" | "trips" | "history";
+type View = "planner" | "trips" | "history" | "budget";
 
 export default function Home() {
   const [view, setView] = useState<View>("planner");
-  const { theme, toggleTheme, trips, tripOrder, groups, categories, importData } = useTripStore();
+  const { theme, toggleTheme, trips, tripOrder, groups, categories, budget, importData } = useTripStore();
   const importRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
     const payload = JSON.stringify(
-      { version: 1, exportedAt: new Date().toISOString(), trips, tripOrder, groups, categories },
+      { version: 1, exportedAt: new Date().toISOString(), trips, tripOrder, groups, categories, budget },
       null, 2
     );
     const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
@@ -106,6 +107,17 @@ export default function Home() {
             <Clock size={14} />
             History
           </button>
+          <button
+            onClick={() => setView("budget")}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors"
+            style={{
+              background: view === "budget" ? "var(--accent-dim)" : "transparent",
+              color: view === "budget" ? "var(--accent)" : "var(--text-muted)",
+            }}
+          >
+            <Wallet size={14} />
+            Budget
+          </button>
 
           <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
 
@@ -152,6 +164,7 @@ export default function Home() {
 
       {view === "planner" ? <PlannerView />
        : view === "trips"   ? <TripsListPanel />
+       : view === "budget"  ? <BudgetPanel />
        : <HistoryPanel />}
 
       <PastTripPrompt />

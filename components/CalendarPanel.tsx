@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useTripStore, selectScheduledTrips } from "@/store/useTripStore";
 import { Trip, Group } from "@/types";
 import MonthCell, { LaneEntry } from "@/components/MonthCell";
-import { ChevronDown, ChevronRight, ChevronLeft, CalendarDays, ChevronsUpDown } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft, CalendarDays, ChevronsUpDown, AlertTriangle } from "lucide-react";
 
 const MONTH_NAMES = [
   "Jan","Feb","Mar","Apr","May","Jun",
@@ -136,13 +136,14 @@ function DensityStrip({ year, trips, groups, compact }: {
 }
 
 // ── Year section ──────────────────────────────────────────────────────────────
-function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, forceCollapsed }: {
+function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, forceCollapsed, isOverBudget }: {
   year: number;
   scheduledTrips: Trip[];
   groups: Group[];
   currentMonth: number;
   currentYear: number;
   forceCollapsed: boolean | null;
+  isOverBudget: boolean;
 }) {
   const [localCollapsed, setLocalCollapsed] = useState(false);
   const isPast    = year < currentYear;
@@ -166,6 +167,12 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
           {year}
           {isPast && <span className="ml-2 text-xs font-sans" style={{ color: "var(--text-muted)" }}>history</span>}
         </span>
+        {isOverBudget && (
+          <span className="flex items-center gap-1 ml-1 text-xs font-medium" style={{ color: "#ef4444" }}>
+            <AlertTriangle size={12} />
+            over budget
+          </span>
+        )}
         {collapsed && (
           <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>
             — {tripCount} trip{tripCount !== 1 ? "s" : ""}
@@ -202,8 +209,17 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
 }
 
 // ── CalendarPanel ─────────────────────────────────────────────────────────────
+function yearBudgetStats(trips: Trip[], year: number) {
+  const relevant = trips.filter((t) => t.scheduled?.startYear === year && t.estimatedCost);
+  const spent = relevant.filter((t) => t.status === "completed")
+    .reduce((s, t) => s + (t.estimatedCost ?? 0), 0);
+  const committed = relevant.filter((t) => t.status === "planning" || t.status === "booked")
+    .reduce((s, t) => s + (t.estimatedCost ?? 0), 0);
+  return spent + committed;
+}
+
 export default function CalendarPanel() {
-  const { trips, groups, filters } = useTripStore();
+  const { trips, groups, filters, budget } = useTripStore();
   const scheduledTrips = selectScheduledTrips(trips, filters);
 
   const now          = new Date();
@@ -284,18 +300,23 @@ export default function CalendarPanel() {
 
       {/* Year sections */}
       <div style={{ minWidth: "700px" }}>
-        {years.map((year) => (
-          <div key={year} ref={year === currentYear ? todayRef : undefined}>
-            <YearSection
-              year={year}
-              scheduledTrips={scheduledTrips}
-              groups={groups}
-              currentMonth={currentMonth}
-              currentYear={currentYear}
-              forceCollapsed={allCollapsed}
-            />
-          </div>
-        ))}
+        {years.map((year) => {
+          const total = yearBudgetStats(trips, year);
+          const alloc = budget.annualAllocations[year] ?? 0;
+          return (
+            <div key={year} ref={year === currentYear ? todayRef : undefined}>
+              <YearSection
+                year={year}
+                scheduledTrips={scheduledTrips}
+                groups={groups}
+                currentMonth={currentMonth}
+                currentYear={currentYear}
+                forceCollapsed={allCollapsed}
+                isOverBudget={alloc > 0 && total > alloc}
+              />
+            </div>
+          );
+        })}
       </div>
     </main>
   );

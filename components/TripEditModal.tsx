@@ -29,11 +29,15 @@ type Props = {
 export default function TripEditModal({ trip, onClose }: Props) {
   const { trips, groups, updateTrip, removeTrip } = useTripStore();
   const categories = useTripStore((s) => s.categories);
+  const currency = useTripStore((s) => s.budget.currency);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear - 2 + i);
 
-  const [imageUrl,      setImageUrl]      = useState(trip.imageUrl ?? "");
-  const [title,         setTitle]         = useState(trip.title);
+  const [imageUrl,       setImageUrl]       = useState(trip.imageUrl ?? "");
+  const [title,          setTitle]          = useState(trip.title);
+  const [estimatedCost,  setEstimatedCost]  = useState<string>(
+    trip.estimatedCost !== undefined ? String(trip.estimatedCost) : ""
+  );
   const [destination,   setDestination]   = useState(trip.destination);
   const [groupId,       setGroupId]       = useState(trip.groupId);
   const [categoryId,    setCategoryId]    = useState(trip.categoryId ?? "");
@@ -133,6 +137,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
     notes: notes.trim() || undefined,
     continent: continent || undefined,
     tags,
+    estimatedCost: estimatedCost !== "" ? Math.max(0, parseFloat(estimatedCost)) || undefined : undefined,
     bookBy: showBookBy && localIsScheduled
       ? { month: bookByMonth, year: bookByYear, day: bookByDay ? Number(bookByDay) : undefined }
       : undefined,
@@ -379,6 +384,25 @@ export default function TripEditModal({ trip, onClose }: Props) {
                 ⚠️ Duration suggests ~{Math.ceil(durationWeeks / 4)} month{Math.ceil(durationWeeks / 4) > 1 ? "s" : ""} on the calendar.
               </p>
             )}
+          </div>
+
+          {/* Estimated Cost */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Estimated Cost
+              <span className="ml-1 opacity-60">(optional)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono px-2 py-2 rounded-md"
+                style={{ background: "var(--surface-3)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                {currency}
+              </span>
+              <input type="number" min={0} step={1}
+                className="flex-1 text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
+                placeholder="0"
+                value={estimatedCost}
+                onChange={(e) => setEstimatedCost(e.target.value)} />
+            </div>
           </div>
 
           {/* Scheduled range */}

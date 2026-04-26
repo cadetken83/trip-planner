@@ -82,6 +82,7 @@ export type Trip = {
   status: TripStatus;
   scheduled?: ScheduledRange;
   durationWeeks?: number;
+  estimatedCost?: number;
   bookBy?: BookBy;
   notes?: string;
   tags?: string[];
@@ -102,6 +103,20 @@ export type FilterState = {
 
 export type DragData = { tripId: string };
 export type DropData = { month: number; year: number };
+
+// ─── Budget ───────────────────────────────────────────────────────────────────
+
+export type Budget = {
+  currency: string;
+  totalBudget: number;
+  annualAllocations: Record<number, number>;
+};
+
+export const DEFAULT_BUDGET: Budget = {
+  currency: "USD",
+  totalBudget: 0,
+  annualAllocations: {},
+};
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 

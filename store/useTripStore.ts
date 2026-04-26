@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   Trip, Group, FilterState, ScheduledRange,
-  TripCategory, Theme,
-  DEFAULT_GROUPS, DEFAULT_CATEGORIES, GROUP_COLOR_PALETTE,
+  TripCategory, Theme, Budget,
+  DEFAULT_GROUPS, DEFAULT_CATEGORIES, DEFAULT_BUDGET, GROUP_COLOR_PALETTE,
 } from "@/types";
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
@@ -72,11 +72,16 @@ type TripStore = {
 
   toggleTheme: () => void;
 
+  budget: Budget;
+  setBudget: (updates: Partial<Omit<Budget, "annualAllocations">>) => void;
+  setAnnualAllocation: (year: number, amount: number) => void;
+
   importData: (data: {
     trips: Trip[];
     tripOrder: string[];
     groups: Group[];
     categories: TripCategory[];
+    budget?: Budget;
   }) => void;
 };
 
@@ -96,6 +101,7 @@ export const useTripStore = create<TripStore>()(
       tripOrder: SEED_ORDER,
       groups: DEFAULT_GROUPS,
       categories: DEFAULT_CATEGORIES,
+      budget: DEFAULT_BUDGET,
       theme: "light",
       filters: {
         groupIds: [], continents: [], statuses: [],
@@ -224,12 +230,23 @@ export const useTripStore = create<TripStore>()(
           return { theme: next };
         }),
 
+      setBudget: (updates) =>
+        set((s) => ({ budget: { ...s.budget, ...updates } })),
+      setAnnualAllocation: (year, amount) =>
+        set((s) => ({
+          budget: {
+            ...s.budget,
+            annualAllocations: { ...s.budget.annualAllocations, [year]: amount },
+          },
+        })),
+
       importData: (data) =>
         set({
           trips: data.trips,
           tripOrder: data.tripOrder,
           groups: data.groups?.length ? data.groups : DEFAULT_GROUPS,
           categories: data.categories?.length ? data.categories : DEFAULT_CATEGORIES,
+          budget: data.budget ?? DEFAULT_BUDGET,
           filters: {
             groupIds: [], continents: [], statuses: [],
             categoryIds: [], showCompleted: false,
