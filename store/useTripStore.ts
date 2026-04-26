@@ -71,6 +71,13 @@ type TripStore = {
   clearFilters: () => void;
 
   toggleTheme: () => void;
+
+  importData: (data: {
+    trips: Trip[];
+    tripOrder: string[];
+    groups: Group[];
+    categories: TripCategory[];
+  }) => void;
 };
 
 function getNextColor(usedColors: string[]): string {
@@ -215,6 +222,18 @@ export const useTripStore = create<TripStore>()(
           const next = s.theme === "dark" ? "light" : "dark";
           document.documentElement.setAttribute("data-theme", next);
           return { theme: next };
+        }),
+
+      importData: (data) =>
+        set({
+          trips: data.trips,
+          tripOrder: data.tripOrder,
+          groups: data.groups?.length ? data.groups : DEFAULT_GROUPS,
+          categories: data.categories?.length ? data.categories : DEFAULT_CATEGORIES,
+          filters: {
+            groupIds: [], continents: [], statuses: [],
+            categoryIds: [], showCompleted: false,
+          },
         }),
     }),
     {

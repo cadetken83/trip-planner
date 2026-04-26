@@ -1,19 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PlannerView from "@/components/PlannerView";
 import FilterBar from "@/components/FilterBar";
 import HistoryPanel from "@/components/HistoryPanel";
 import TripsListPanel from "@/components/TripsListPanel";
 import PastTripPrompt from "@/components/PastTripPrompt";
 import { useTripStore } from "@/store/useTripStore";
-import { CalendarDays, Clock, List, Sun, Moon } from "lucide-react";
+import { CalendarDays, Clock, Download, List, Moon, Sun, Upload } from "lucide-react";
 
 type View = "planner" | "trips" | "history";
 
 export default function Home() {
   const [view, setView] = useState<View>("planner");
-  const { theme, toggleTheme } = useTripStore();
+  const { theme, toggleTheme, trips, tripOrder, groups, categories, importData } = useTripStore();
+  const importRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const payload = JSON.stringify(
+      { version: 1, exportedAt: new Date().toISOString(), trips, tripOrder, groups, categories },
+      null, 2
+    );
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wanderlist-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!importRef.current) return;
+    importRef.current.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (!Array.isArray(data.trips) || !Array.isArray(data.tripOrder))
+          throw new Error("Invalid file");
+        if (!window.confirm(`Replace all current trips with data from "${file.name}"? This cannot be undone.`))
+          return;
+        importData(data);
+      } catch {
+        alert("Could not read file — make sure it's a Wanderlist export.");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -71,6 +106,34 @@ export default function Home() {
             <Clock size={14} />
             History
           </button>
+
+          <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
+
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            title="Export trips to JSON"
+          >
+            <Download size={14} />
+          </button>
+
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            title="Import trips from JSON"
+          >
+            <Upload size={14} />
+          </button>
+
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
 
           <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
 
