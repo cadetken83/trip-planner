@@ -102,6 +102,8 @@ function AllocationInput({
 }
 
 // ── BudgetPanel ───────────────────────────────────────────────────────────────
+type PendingAllocation = { year: number; amount: number; newTotalAllocated: number };
+
 export default function BudgetPanel() {
   const { trips, budget, setBudget, setAnnualAllocation } = useTripStore();
   const { currency, totalBudget, annualAllocations } = budget;
@@ -113,6 +115,9 @@ export default function BudgetPanel() {
   const [editingTotal, setEditingTotal] = useState(false);
   const [totalRaw, setTotalRaw] = useState("");
   const [totalError, setTotalError] = useState("");
+
+  // Pending over-allocation prompt
+  const [pendingAlloc, setPendingAlloc] = useState<PendingAllocation | null>(null);
 
   // Year range: past years with trips or allocations, current through max future
   const scheduledYears = trips.filter((t) => t.scheduled).map((t) => t.scheduled!.startYear);
@@ -139,6 +144,17 @@ export default function BudgetPanel() {
   const totalConsumed = totalSpent + totalCommitted;
   const totalRemaining = totalBudget - totalConsumed;
   const overallOver = totalBudget > 0 && totalConsumed > totalBudget;
+
+  // Guard: check if the new allocation would over-run total budget
+  const handleAllocationRequest = (year: number, amount: number) => {
+    const currentAlloc = annualAllocations[year] ?? 0;
+    const newTotalAllocated = totalAllocated - currentAlloc + amount;
+    if (totalBudget > 0 && newTotalAllocated > totalBudget) {
+      setPendingAlloc({ year, amount, newTotalAllocated });
+    } else {
+      setAnnualAllocation(year, amount);
+    }
+  };
 
   // Commit the total budget, with guard against being immediately over-budget
   const commitTotalBudget = (raw: string) => {
@@ -366,7 +382,7 @@ export default function BudgetPanel() {
 
                   {/* Allocation */}
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <AllocationInput year={year} value={alloc} currency={currency} onChange={setAnnualAllocation} />
+                    <AllocationInput year={year} value={alloc} currency={currency} onChange={handleAllocationRequest} />
                   </div>
 
                   {/* Committed */}
@@ -401,6 +417,52 @@ export default function BudgetPanel() {
           <Plus size={12} />
           Add {maxFutureYear + 1}
         </button>
+
+        {/* ── Over-allocation prompt ── */}
+        {pendingAlloc && (
+          <div className="fixed inset-0 flex items-center justify-center z-50"
+            style={{ background: "rgba(0,0,0,0.6)" }}>
+            <div className="rounded-xl p-5 w-96 flex flex-col gap-4 shadow-2xl"
+              style={{
+                background: "var(--surface-2)",
+                border: "1px solid var(--border)",
+                borderTop: "3px solid #f59e0b",
+              }}>
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: "2px" }} />
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+                    Year allocation exceeds total budget
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                    Setting {pendingAlloc.year} to {fmt(pendingAlloc.amount, currency)} brings total
+                    allocations to {fmt(pendingAlloc.newTotalAllocated, currency)}, which is{" "}
+                    {fmt(pendingAlloc.newTotalAllocated - totalBudget, currency)} over your{" "}
+                    {fmt(totalBudget, currency)} budget.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setBudget({ totalBudget: pendingAlloc.newTotalAllocated });
+                    setAnnualAllocation(pendingAlloc.year, pendingAlloc.amount);
+                    setPendingAlloc(null);
+                  }}
+                  className="w-full py-2 rounded-lg text-sm font-semibold"
+                  style={{ background: "#f59e0b", color: "#1c1917" }}>
+                  Increase budget to {fmt(pendingAlloc.newTotalAllocated, currency)}
+                </button>
+                <button
+                  onClick={() => setPendingAlloc(null)}
+                  className="w-full py-2 rounded-lg text-sm"
+                  style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>
+                  Cancel — keep current allocation
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Legend */}
         <div className="flex items-center gap-5 px-1">
