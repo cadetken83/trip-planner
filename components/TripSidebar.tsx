@@ -154,6 +154,10 @@ export default function TripSidebar() {
     color: "var(--text-primary)",
     border: "1px solid var(--border)",
   };
+  const selectStyle = (val: string) => ({
+    ...inputStyle,
+    color: val ? "var(--text-primary)" : "var(--text-muted)",
+  });
 
   // ── Add trip ──────────────────────────────────────────────────────────────
   const handleAddTrip = () => {
@@ -284,7 +288,7 @@ export default function TripSidebar() {
             <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>📍 {inferred}</p>
           )}
 
-          <select className="w-full text-sm rounded-md px-2 py-1.5 outline-none" style={inputStyle}
+          <select className="w-full text-sm rounded-md px-2 py-1.5 outline-none" style={selectStyle(newCategoryId)}
             value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)}>
             <option value="">Trip type (optional)</option>
             {categories.map((c) => (

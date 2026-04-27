@@ -28,11 +28,15 @@ export default function TripCard({ trip, group, sortHandleProps }: Props) {
     useDraggable({ id: trip.id, data: { tripId: trip.id } });
 
   const groupColor = group?.color ?? "#78716c";
+  const hasImage = !!trip.imageUrl;
+  const imageBg = hasImage
+    ? `linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.55) 100%), url(${trip.imageUrl}) center/cover no-repeat`
+    : `linear-gradient(135deg, ${groupColor}33 0%, ${groupColor}11 100%)`;
 
   return (
     <>
       <div
-        className="relative rounded-lg"
+        className="relative rounded-lg overflow-hidden"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => { setHovered(false); setShowDeleteConfirm(false); }}
       >
@@ -48,72 +52,74 @@ export default function TripCard({ trip, group, sortHandleProps }: Props) {
             border: `1px solid var(--border-subtle)`,
             borderLeft: `3px solid ${groupColor}`,
           }}
-          className="rounded-lg p-3 hover:shadow-lg"
+          className="rounded-lg hover:shadow-lg"
           onClick={() => { if (!isDragging && !showDeleteConfirm) setShowEdit(true); }}
           suppressHydrationWarning
           {...attributes}
           {...listeners}
         >
-          <div className="flex items-start gap-2">
-            {/* Sort handle — uses sortHandleProps, stops calendar drag */}
+          {/* Image / colour header */}
+          <div style={{ height: "120px", background: imageBg, flexShrink: 0, position: "relative" }}>
+            {/* Sort + drag handle — top left */}
             <div
-              className="mt-0.5 shrink-0 cursor-grab active:cursor-grabbing"
-              style={{ color: "var(--text-muted)", opacity: 0.4 }}
-              onMouseDown={(e) => e.stopPropagation()} // don't start calendar drag
+              className="absolute top-2 left-2 cursor-grab active:cursor-grabbing rounded p-0.5"
+              style={{ color: "#fff", opacity: 0.7, background: "rgba(0,0,0,0.3)" }}
+              onMouseDown={(e) => e.stopPropagation()}
               {...(sortHandleProps ?? {})}
             >
               <GripVertical size={14} />
             </div>
+          </div>
 
-            <div className="flex-1 min-w-0 pr-6">
-              <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                {trip.title}
-              </p>
+          {/* Card body */}
+          <div className="p-3 pr-8">
+            <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
+              {trip.title}
+            </p>
 
-              {trip.destination && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <MapPin size={10} style={{ color: "var(--text-muted)" }} />
-                  <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
-                    {trip.destination}
+            {trip.destination && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <MapPin size={10} style={{ color: "var(--text-muted)" }} />
+                <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
+                  {trip.destination}
+                </span>
+              </div>
+            )}
+
+            {trip.tags && trip.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {trip.tags.map((tag) => (
+                  <span key={tag} className="text-xs px-1.5 py-0.5 rounded"
+                    style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}>
+                    {tag}
                   </span>
-                </div>
-              )}
+                ))}
+              </div>
+            )}
 
-              {trip.tags && trip.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {trip.tags.map((tag) => (
-                    <span key={tag} className="text-xs px-1.5 py-0.5 rounded"
-                      style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: `${groupColor}22`, color: groupColor }}>
-                    {group?.name ?? "No group"}
-                  </span>
-                  {category && (
-                    <span className="text-xs" title={category.name}>{category.icon}</span>
-                  )}
-                </div>
-                {trip.durationWeeks && (
-                  <div className="flex items-center gap-1">
-                    <Clock size={10} style={{ color: "var(--text-muted)" }} />
-                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                      ~{trip.durationWeeks}w
-                    </span>
-                  </div>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ background: `${groupColor}22`, color: groupColor }}>
+                  {group?.name ?? "No group"}
+                </span>
+                {category && (
+                  <span className="text-xs" title={category.name}>{category.icon}</span>
                 )}
               </div>
+              {trip.durationWeeks && (
+                <div className="flex items-center gap-1">
+                  <Clock size={10} style={{ color: "var(--text-muted)" }} />
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    ~{trip.durationWeeks}w
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Delete button */}
+        {/* Delete button — floats over image header */}
         {hovered && !isDragging && (
           <div className="absolute top-2 right-2 z-10">
             {showDeleteConfirm ? (

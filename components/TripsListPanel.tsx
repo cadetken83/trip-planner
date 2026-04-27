@@ -349,6 +349,10 @@ export default function TripsListPanel() {
     color: "var(--text-primary)",
     border: "1px solid var(--border)",
   };
+  const selectStyle = (val: string) => ({
+    ...inputStyle,
+    color: val ? "var(--text-primary)" : "var(--text-muted)",
+  });
 
   return (
     <main className="flex-1 overflow-y-auto px-6 py-5">
@@ -398,7 +402,7 @@ export default function TripsListPanel() {
                 value={newGroupId} onChange={(e) => setNewGroupId(e.target.value)}>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}{g.isDefault ? " ★" : ""}</option>)}
               </select>
-              <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={inputStyle}
+              <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={selectStyle(newCategoryId)}
                 value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)}>
                 <option value="">Trip type (optional)</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}

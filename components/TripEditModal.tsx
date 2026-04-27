@@ -191,6 +191,10 @@ export default function TripEditModal({ trip, onClose }: Props) {
     color: "var(--text-primary)",
     border: "1px solid var(--border)",
   };
+  const selectStyle = (val: string) => ({
+    ...inputStyle,
+    color: val ? "var(--text-primary)" : "var(--text-muted)",
+  });
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50"
@@ -302,9 +306,9 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {/* Trip Type */}
           <div className="flex flex-col gap-1">
             <label className="text-xs" style={{ color: "var(--text-muted)" }}>Trip Type</label>
-            <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
+            <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={selectStyle(categoryId)}
               value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">None</option>
+              <option value="">Trip type (optional)</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
               ))}
