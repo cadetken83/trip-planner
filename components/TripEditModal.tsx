@@ -562,7 +562,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
             </button>
             <button onClick={handleSave}
               className="text-sm px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-90"
-              style={{ background: groupColor, color: "#0c0a09" }}>
+              style={{ background: "var(--accent)", color: "#1c1917" }}>
               Save Changes
             </button>
           </div>
