@@ -12,22 +12,26 @@ const SEED_TRIPS: Trip[] = [
   {
     id: "trip-1", title: "Tokyo Adventure", destination: "Tokyo, Japan",
     continent: "Asia", groupId: "family", categoryId: "city",
-    status: "unscheduled", durationWeeks: 2, tags: ["food", "culture"],
+    status: "unscheduled", durationWeeks: 2, tags: ["food", "culture", "example"],
+    imageUrl: "https://wallpapertag.com/wallpaper/full/2/f/e/519365-large-japanese-scenery-wallpaper-2048x1401.jpg",
   },
   {
     id: "trip-2", title: "Amalfi Coast", destination: "Amalfi, Italy",
     continent: "Europe", groupId: "couples", categoryId: "beach",
-    status: "unscheduled", durationWeeks: 1, tags: ["food"],
+    status: "unscheduled", durationWeeks: 1, tags: ["food", "example"],
+    imageUrl: "https://wallpaperaccess.com/full/2122279.jpg",
   },
   {
     id: "trip-3", title: "Patagonia Trek", destination: "Patagonia, Argentina",
     continent: "South America", groupId: "solo", categoryId: "hiking",
-    status: "unscheduled", durationWeeks: 3,
+    status: "unscheduled", durationWeeks: 3, tags: ["example"],
+    imageUrl: "https://cdn.pixabay.com/photo/2022/11/25/20/11/argentina-7616819_1280.jpg",
   },
   {
     id: "trip-4", title: "Safari", destination: "Serengeti, Tanzania",
     continent: "Africa", groupId: "family", categoryId: "safari",
-    status: "unscheduled", durationWeeks: 2,
+    status: "unscheduled", durationWeeks: 2, tags: ["example"],
+    imageUrl: "https://www.theluxeinsider.com/wp-content/uploads/2022/12/african-savannah.jpeg",
   },
 ];
 

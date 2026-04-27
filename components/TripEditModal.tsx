@@ -199,7 +199,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
         style={{
           background: "var(--surface-2)",
           border: "1px solid var(--border)",
-          borderTop: `3px solid ${groupColor}`,
+          borderTop: "3px solid var(--accent)",
         }}
         onClick={(e) => e.stopPropagation()}>
 

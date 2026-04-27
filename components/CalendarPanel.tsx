@@ -136,24 +136,23 @@ function DensityStrip({ year, trips, groups, compact }: {
 }
 
 // ── Year section ──────────────────────────────────────────────────────────────
-function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, forceCollapsed, isOverBudget }: {
+function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, collapsed, onToggle, isOverBudget }: {
   year: number;
   scheduledTrips: Trip[];
   groups: Group[];
   currentMonth: number;
   currentYear: number;
-  forceCollapsed: boolean | null;
+  collapsed: boolean;
+  onToggle: () => void;
   isOverBudget: boolean;
 }) {
-  const [localCollapsed, setLocalCollapsed] = useState(false);
   const isPast    = year < currentYear;
-  const collapsed = forceCollapsed !== null ? forceCollapsed : localCollapsed;
   const laneOrder = buildLaneOrder(scheduledTrips, year);
   const tripCount = laneOrder.length;
 
   return (
     <div className="mb-6">
-      <button onClick={() => setLocalCollapsed(!collapsed)}
+      <button onClick={onToggle}
         className="flex items-center gap-2 w-full mb-2">
         {collapsed
           ? <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
@@ -226,10 +225,22 @@ export default function CalendarPanel() {
   const currentMonth = now.getMonth();
   const currentYear  = now.getFullYear();
 
-  const [windowStart,  setWindowStart]  = useState(currentYear);
-  const [allCollapsed, setAllCollapsed] = useState<boolean | null>(null);
+  const [windowStart,    setWindowStart]    = useState(currentYear);
+  const [collapsedYears, setCollapsedYears] = useState<Set<number>>(new Set());
   const years    = Array.from({ length: 5 }, (_, i) => windowStart + i);
   const todayRef = useRef<HTMLDivElement>(null);
+
+  const allCollapsed = years.every((y) => collapsedYears.has(y));
+
+  const toggleYear = (year: number) =>
+    setCollapsedYears((prev) => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year); else next.add(year);
+      return next;
+    });
+
+  const collapseAll = () => setCollapsedYears(new Set(years));
+  const expandAll   = () => setCollapsedYears(new Set());
 
   const scrollToToday = () => {
     if (currentYear < windowStart || currentYear > windowStart + 4) setWindowStart(currentYear);
@@ -285,7 +296,7 @@ export default function CalendarPanel() {
 
           <div className="w-px h-4 mx-1" style={{ background: "var(--border)" }} />
 
-          <button onClick={() => setAllCollapsed((p) => p === true ? false : true)}
+          <button onClick={() => allCollapsed ? expandAll() : collapseAll()}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors"
             style={{ color: "var(--text-secondary)" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-3)")}
@@ -311,7 +322,8 @@ export default function CalendarPanel() {
                 groups={groups}
                 currentMonth={currentMonth}
                 currentYear={currentYear}
-                forceCollapsed={allCollapsed}
+                collapsed={collapsedYears.has(year)}
+                onToggle={() => toggleYear(year)}
                 isOverBudget={alloc > 0 && total > alloc}
               />
             </div>

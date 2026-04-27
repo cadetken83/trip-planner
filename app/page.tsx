@@ -94,7 +94,7 @@ export default function Home() {
             }}
           >
             <List size={14} />
-            All Trips
+            Trips
           </button>
           <button
             onClick={() => setView("history")}
@@ -152,7 +152,7 @@ export default function Home() {
           <button
             onClick={toggleTheme}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: isLight ? "var(--text-muted)" : "#fbbf24" }}
             title={isLight ? "Switch to dark mode" : "Switch to light mode"}
           >
             {isLight ? <Moon size={14} /> : <Sun size={14} />}
