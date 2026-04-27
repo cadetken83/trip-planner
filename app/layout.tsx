@@ -18,10 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           __html: `
             try {
               const stored = JSON.parse(localStorage.getItem('trip-planner-storage') || '{}');
-              const theme = stored?.state?.theme || 'dark';
+              const theme = stored?.state?.theme || 'light';
               document.documentElement.setAttribute('data-theme', theme);
             } catch(e) {
-              document.documentElement.setAttribute('data-theme', 'dark');
+              document.documentElement.setAttribute('data-theme', 'light');
             }
           `
         }} />
