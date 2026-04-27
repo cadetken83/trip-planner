@@ -87,6 +87,6 @@ body {
 .hover-surface:hover { background: var(--surface-3) !important; }
 
 /* Inputs and selects inherit theme */
-select, option { background: var(--surface-3); color: var(--text-primary); }
+select, option { background: var(--surface-3); color: var(--text-primary); font-family: inherit; font-size: inherit; }
 ::placeholder  { color: var(--text-muted); opacity: 1; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
