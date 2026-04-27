@@ -259,21 +259,30 @@ export const useTripStore = create<TripStore>()(
     }),
     {
       name: "trip-planner-storage",
-      merge: (persisted: any, current) => ({
-        ...current,
-        ...persisted,
-        tripOrder: persisted?.tripOrder ?? (persisted?.trips ?? current.trips).map((t: Trip) => t.id),
-        filters: {
-          groupIds: [], continents: [], statuses: [],
-          categoryIds: [], showCompleted: false,
-          ...(persisted?.filters ?? {}),
-        },
-        categories: persisted?.categories ?? current.categories,
-        theme: persisted?.theme ?? "dark",
-        groups: (persisted?.groups ?? current.groups).map((g: any) => ({
-          isDefault: false, ...g,
-        })),
-      }),
+      merge: (persisted: any, current) => {
+        const seedById = Object.fromEntries(SEED_TRIPS.map((t) => [t.id, t]));
+        const trips = (persisted?.trips ?? current.trips).map((t: Trip) =>
+          t.tags?.includes("example") && !t.imageUrl && seedById[t.id]
+            ? { ...t, imageUrl: seedById[t.id].imageUrl }
+            : t
+        );
+        return {
+          ...current,
+          ...persisted,
+          trips,
+          tripOrder: persisted?.tripOrder ?? trips.map((t: Trip) => t.id),
+          filters: {
+            groupIds: [], continents: [], statuses: [],
+            categoryIds: [], showCompleted: false,
+            ...(persisted?.filters ?? {}),
+          },
+          categories: persisted?.categories ?? current.categories,
+          theme: persisted?.theme ?? "light",
+          groups: (persisted?.groups ?? current.groups).map((g: any) => ({
+            isDefault: false, ...g,
+          })),
+        };
+      },
     }
   )
 );

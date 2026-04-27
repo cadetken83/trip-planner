@@ -9,6 +9,7 @@ import BudgetPanel from "@/components/BudgetPanel";
 import PastTripPrompt from "@/components/PastTripPrompt";
 import { useTripStore } from "@/store/useTripStore";
 import { CalendarDays, Clock, Download, List, Moon, Sun, Upload, Wallet } from "lucide-react";
+import WanderlistIcon from "@/components/WanderlistIcon";
 
 type View = "planner" | "trips" | "history" | "budget";
 
@@ -65,6 +66,9 @@ export default function Home() {
         className="flex items-center justify-between px-6 py-3 shrink-0"
       >
         <div className="flex items-center gap-3">
+          <span style={{ color: "var(--accent)", lineHeight: 0 }}>
+            <WanderlistIcon size={22} />
+          </span>
           <span className="font-display text-2xl tracking-tight" style={{ color: "var(--accent)" }}>
             Wanderlist
           </span>
