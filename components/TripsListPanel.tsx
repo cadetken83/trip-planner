@@ -426,11 +426,11 @@ export default function TripsListPanel() {
             </div>
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setShowAddForm(false); setNewTitle(""); setNewDest(""); setNewTags([]); setNewTagInput(""); setDupError(""); }}
-                className="px-4 py-2 rounded-lg text-sm"
+                className="px-4 py-2 rounded-lg text-sm font-medium"
                 style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>Cancel</button>
               <button onClick={handleAddTrip}
-                className="px-4 py-2 rounded-lg text-sm font-semibold"
-                style={{ background: "#f59e0b", color: "#1c1917" }}>Add Trip</button>
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: "var(--accent)", color: "#1c1917" }}>Add Trip</button>
             </div>
           </div>
         )}
