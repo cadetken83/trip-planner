@@ -72,6 +72,7 @@ type TripStore = {
   setStatusFilter: (statuses: FilterState["statuses"]) => void;
   setCategoryFilter: (categoryIds: string[]) => void;
   toggleShowCompleted: () => void;
+  setSearchQuery: (q: string) => void;
   clearFilters: () => void;
 
   toggleTheme: () => void;
@@ -109,7 +110,7 @@ export const useTripStore = create<TripStore>()(
       theme: "light",
       filters: {
         groupIds: [], continents: [], statuses: [],
-        categoryIds: [], showCompleted: false,
+        categoryIds: [], showCompleted: false, searchQuery: "",
       },
 
       addTrip: (trip) =>
@@ -219,11 +220,14 @@ export const useTripStore = create<TripStore>()(
           filters: { ...s.filters, showCompleted: !s.filters.showCompleted },
         })),
 
+      setSearchQuery: (searchQuery) =>
+        set((s) => ({ filters: { ...s.filters, searchQuery } })),
+
       clearFilters: () =>
         set({
           filters: {
             groupIds: [], continents: [], statuses: [],
-            categoryIds: [], showCompleted: false,
+            categoryIds: [], showCompleted: false, searchQuery: "",
           },
         }),
 
@@ -253,7 +257,7 @@ export const useTripStore = create<TripStore>()(
           budget: data.budget ?? DEFAULT_BUDGET,
           filters: {
             groupIds: [], continents: [], statuses: [],
-            categoryIds: [], showCompleted: false,
+            categoryIds: [], showCompleted: false, searchQuery: "",
           },
         }),
     }),
@@ -261,11 +265,15 @@ export const useTripStore = create<TripStore>()(
       name: "trip-planner-storage",
       merge: (persisted: any, current) => {
         const seedById = Object.fromEntries(SEED_TRIPS.map((t) => [t.id, t]));
-        const trips = (persisted?.trips ?? current.trips).map((t: Trip) =>
-          t.tags?.includes("example") && !t.imageUrl && seedById[t.id]
-            ? { ...t, imageUrl: seedById[t.id].imageUrl }
-            : t
-        );
+        const trips = (persisted?.trips ?? current.trips).map((t: Trip) => {
+          const seed = seedById[t.id];
+          if (!seed) return t;
+          return {
+            ...t,
+            imageUrl: t.imageUrl ?? seed.imageUrl,
+            tags: t.tags?.includes("example") ? t.tags : [...(t.tags ?? []), "example"],
+          };
+        });
         return {
           ...current,
           ...persisted,
@@ -273,7 +281,7 @@ export const useTripStore = create<TripStore>()(
           tripOrder: persisted?.tripOrder ?? trips.map((t: Trip) => t.id),
           filters: {
             groupIds: [], continents: [], statuses: [],
-            categoryIds: [], showCompleted: false,
+            categoryIds: [], showCompleted: false, searchQuery: "",
             ...(persisted?.filters ?? {}),
           },
           categories: persisted?.categories ?? current.categories,
@@ -289,6 +297,16 @@ export const useTripStore = create<TripStore>()(
 
 // ─── Selectors ────────────────────────────────────────────────────────────────
 
+function matchesSearch(t: Trip, q: string): boolean {
+  if (!q) return true;
+  const lower = q.toLowerCase();
+  return (
+    t.title.toLowerCase().includes(lower) ||
+    (t.destination?.toLowerCase().includes(lower) ?? false) ||
+    (t.tags?.some((tag) => tag.toLowerCase().includes(lower)) ?? false)
+  );
+}
+
 export const selectUnscheduledTrips = (
   trips: Trip[],
   tripOrder: string[],
@@ -299,6 +317,7 @@ export const selectUnscheduledTrips = (
     .filter((t): t is Trip => !!t && t.status === "unscheduled");
 
   return ordered.filter((t) => {
+    if (!matchesSearch(t, filters.searchQuery)) return false;
     if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
     if (filters.continents.length && t.continent && !filters.continents.includes(t.continent)) return false;
     if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
@@ -311,6 +330,7 @@ export const selectScheduledTrips = (trips: Trip[], filters: FilterState) =>
     if (!t.scheduled) return false;
     if (t.status === "unscheduled") return false;
     if (t.status === "completed" && !filters.showCompleted) return false;
+    if (!matchesSearch(t, filters.searchQuery)) return false;
     if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
     if (filters.continents.length && t.continent && !filters.continents.includes(t.continent)) return false;
     if (filters.statuses.length && !filters.statuses.includes(t.status)) return false;

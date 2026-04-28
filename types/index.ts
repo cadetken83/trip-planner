@@ -97,6 +97,7 @@ export type FilterState = {
   statuses: TripStatus[];
   categoryIds: string[];
   showCompleted: boolean;
+  searchQuery: string;
 };
 
 // ─── Drag / Drop ──────────────────────────────────────────────────────────────

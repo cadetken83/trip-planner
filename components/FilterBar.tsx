@@ -2,7 +2,7 @@
 
 import { useTripStore } from "@/store/useTripStore";
 import { Continent, TripStatus } from "@/types";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 const CONTINENTS: Continent[] = [
   "North America","South America","Europe",
@@ -18,10 +18,11 @@ export default function FilterBar() {
   const {
     groups, categories, filters,
     setGroupFilter, setContinentFilter, setStatusFilter,
-    setCategoryFilter, toggleShowCompleted, clearFilters,
+    setCategoryFilter, toggleShowCompleted, setSearchQuery, clearFilters,
   } = useTripStore();
 
   const hasActiveFilters =
+    filters.searchQuery.length > 0 ||
     filters.groupIds.length > 0 ||
     filters.continents.length > 0 ||
     filters.statuses.length > 0 ||
@@ -70,8 +71,29 @@ export default function FilterBar() {
       style={{ background: "var(--surface-1)", borderBottom: "1px solid var(--border)" }}
       className="flex flex-col px-4 py-2 text-xs shrink-0 gap-1.5"
     >
-      {/* Row 1: Travel Groups + Status + Show Completed + Clear */}
+      {/* Row 1: Search + Travel Groups + Status + Show Completed + Clear */}
       <div className="flex items-center gap-3 overflow-x-auto">
+
+        {/* Search */}
+        <div className="flex items-center gap-1.5 shrink-0 rounded-full px-2.5 py-1 border"
+          style={{ background: "var(--surface-2)", borderColor: filters.searchQuery ? "var(--accent)" : "var(--border)" }}>
+          <Search size={11} style={{ color: filters.searchQuery ? "var(--accent)" : "var(--text-muted)" }} />
+          <input
+            type="text"
+            placeholder="Search trips…"
+            value={filters.searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="outline-none bg-transparent text-xs w-32"
+            style={{ color: "var(--text-primary)" }}
+          />
+          {filters.searchQuery && (
+            <button onClick={() => setSearchQuery("")} style={{ color: "var(--text-muted)", lineHeight: 0 }}>
+              <X size={10} />
+            </button>
+          )}
+        </div>
+
+        <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
 
         {groups.length > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">

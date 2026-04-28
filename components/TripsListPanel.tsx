@@ -316,6 +316,14 @@ export default function TripsListPanel() {
 
   // ── Filter + sort ──────────────────────────────────────────────────────────
   const filtered = useMemo(() => trips.filter((t) => {
+    const q = globalFilters.searchQuery?.toLowerCase().trim();
+    if (q) {
+      const match =
+        t.title.toLowerCase().includes(q) ||
+        (t.destination?.toLowerCase().includes(q) ?? false) ||
+        (t.tags?.some((tag) => tag.toLowerCase().includes(q)) ?? false);
+      if (!match) return false;
+    }
     if (globalFilters.groupIds.length && !globalFilters.groupIds.includes(t.groupId)) return false;
     if (globalFilters.continents.length && t.continent && !globalFilters.continents.includes(t.continent)) return false;
     if (globalFilters.categoryIds.length && (!t.categoryId || !globalFilters.categoryIds.includes(t.categoryId))) return false;
