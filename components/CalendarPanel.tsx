@@ -81,32 +81,29 @@ function StatsBar({ trips }: { trips: Trip[] }) {
     parts.push({ num: totalWeeks, label: totalWeeks === 1 ? "week" : "weeks" });
 
   return (
-    <div className="flex justify-center mb-6" style={{ minWidth: "700px" }}>
-      <div
-        className="inline-flex items-center rounded-full px-6 py-2.5"
-        style={{
-          background: "var(--surface-2)",
-          border: "1px solid var(--border)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
-          gap: "12px",
-        }}
-      >
-        {parts.flatMap((p, i) => {
-          const stat = (
-            <span key={`s${i}`} style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-              {p.num !== undefined && (
-                <span style={{ fontWeight: 800, fontSize: "15px", color: "var(--accent)" }}>{p.num} </span>
-              )}
-              {p.label}
-            </span>
-          );
-          if (i === 0) return [stat];
-          return [
-            <span key={`d${i}`} style={{ color: "var(--text-muted)", opacity: 0.4, fontSize: "14px" }}>·</span>,
-            stat,
-          ];
-        })}
-      </div>
+    <div
+      className="inline-flex items-center rounded-full px-4 py-1.5"
+      style={{
+        background: "var(--surface-2)",
+        border: "1px solid var(--border)",
+        gap: "10px",
+      }}
+    >
+      {parts.flatMap((p, i) => {
+        const stat = (
+          <span key={`s${i}`} style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+            {p.num !== undefined && (
+              <span style={{ fontWeight: 800, fontSize: "13px", color: "var(--accent)" }}>{p.num} </span>
+            )}
+            {p.label}
+          </span>
+        );
+        if (i === 0) return [stat];
+        return [
+          <span key={`d${i}`} style={{ color: "var(--text-muted)", opacity: 0.4, fontSize: "12px" }}>·</span>,
+          stat,
+        ];
+      })}
     </div>
   );
 }
@@ -270,6 +267,15 @@ export default function CalendarPanel() {
           </span>
         </div>
 
+        {scheduledTrips.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>
+              Your Travel Summary
+            </span>
+            <StatsBar trips={scheduledTrips} />
+          </div>
+        )}
+
         <div className="flex items-center gap-1">
           <button onClick={() => setWindowStart((p) => p - 1)}
             className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors"
@@ -313,8 +319,6 @@ export default function CalendarPanel() {
           </button>
         </div>
       </div>
-
-      <StatsBar trips={scheduledTrips} />
 
       {/* Year sections */}
       <div style={{ minWidth: "700px" }}>

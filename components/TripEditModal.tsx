@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTripStore } from "@/store/useTripStore";
 import { inferContinent } from "@/utils/inferContinent";
 import { Trip, TripStatus, Continent } from "@/types";
-import { X, Trash2, RotateCcw, Ban } from "lucide-react";
+import { X, Trash2, Ban } from "lucide-react";
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
@@ -17,8 +17,9 @@ const CONTINENTS: Continent[] = [
 ];
 
 const SCHEDULED_STATUSES: { value: TripStatus; label: string }[] = [
-  { value: "planning", label: "Planning" },
-  { value: "booked",   label: "Booked" },
+  { value: "planning",  label: "Planning" },
+  { value: "booked",    label: "Booked" },
+  { value: "completed", label: "Done" },
 ];
 
 type Props = {
@@ -48,15 +49,16 @@ export default function TripEditModal({ trip, onClose }: Props) {
   const [tagInput,      setTagInput]      = useState("");
   const [tags,          setTags]          = useState<string[]>(trip.tags ?? []);
 
-  // Continent — always auto-inferred, user can override
-  const [continent,    setContinent]    = useState<Continent | "">(trip.continent ?? "");
-  const [isOverridden, setIsOverridden] = useState(false);
+  // Continent — always auto-inferred; user can also pick manually from the dropdown
+  const [continent, setContinent] = useState<Continent | "">(trip.continent ?? "");
   const prevDestRef = useRef(trip.destination);
 
   // Scheduling
   const isScheduled = !!trip.scheduled;
   const [wantsToSchedule, setWantsToSchedule] = useState(false);
   const localIsScheduled = isScheduled || wantsToSchedule;
+
+  const scheduleRef = useRef<HTMLDivElement>(null);
 
   const [showBookBy,  setShowBookBy]  = useState(!!trip.bookBy);
   const [bookByMonth, setBookByMonth] = useState(trip.bookBy?.month ?? new Date().getMonth());
@@ -81,17 +83,13 @@ export default function TripEditModal({ trip, onClose }: Props) {
   const groupColor = group?.color ?? "#78716c";
 
   // Auto-infer continent when destination changes
-  // If destination changes and infers a NEW continent, accept it automatically
-  // Only lock if user manually chose override
   useEffect(() => {
     const destChanged = destination !== prevDestRef.current;
     prevDestRef.current = destination;
     if (!destChanged) return;
-
-    if (isOverridden) return; // user manually set — don't touch
     const inferred = inferContinent(destination);
     if (inferred) setContinent(inferred);
-  }, [destination, isOverridden]);
+  }, [destination]);
 
   // Duration warning
   useEffect(() => {
@@ -132,8 +130,8 @@ export default function TripEditModal({ trip, onClose }: Props) {
     destination: destination.trim(),
     groupId,
     categoryId: categoryId || undefined,
-    // Newly-scheduled unscheduled trips always start as "planning"
-    status: !isScheduled && wantsToSchedule ? "planning" : status,
+    // Newly-scheduled trips keep "completed" status; others start as "planning"
+    status: !isScheduled && wantsToSchedule ? (trip.status === "completed" ? "completed" : "planning") : status,
     durationWeeks,
     notes: notes.trim() || undefined,
     continent: continent || undefined,
@@ -185,8 +183,6 @@ export default function TripEditModal({ trip, onClose }: Props) {
     onClose();
   };
 
-  const inferredNow = inferContinent(destination);
-
   // Blackout conflict — derived from current form date state, updates reactively
   const conflictingBlackouts = localIsScheduled ? blackoutDates.filter((b) => {
     const ts = startYear * 12 + startMonth + 1;
@@ -220,7 +216,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 className="font-display text-lg" style={{ color: "var(--text-primary)" }}>Manage Trip Detail</h2>
+          <h2 className="font-display text-lg" style={{ color: "var(--text-primary)" }}>Trip Detail</h2>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X size={18} /></button>
         </div>
 
@@ -275,53 +271,19 @@ export default function TripEditModal({ trip, onClose }: Props) {
             {dupError && <p className="text-xs" style={{ color: "#ef4444" }}>{dupError}</p>}
           </div>
 
-          {/* Image URL */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Cover Image URL</label>
-            <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
-              value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://… (optional)" />
-            {imageUrl.trim() && (
-              <div className="rounded-md overflow-hidden mt-1" style={{ height: "80px" }}>
-                <img src={imageUrl.trim()} alt="preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              </div>
-            )}
-          </div>
-
           {/* Destination */}
           <div className="flex flex-col gap-1">
             <label className="text-xs" style={{ color: "var(--text-muted)" }}>Destination</label>
             <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
               value={destination} onChange={(e) => setDestination(e.target.value)}
-              placeholder="City, Country (optional)" />
+              placeholder="City, Country" />
           </div>
 
           {/* Continent */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-              Continent
-              {isOverridden && inferredNow && (
-                <button className="flex items-center gap-1 text-xs underline"
-                  style={{ color: "var(--accent)" }}
-                  onClick={() => { setIsOverridden(false); if (inferredNow) setContinent(inferredNow); }}
-                  title={`Revert to auto-detected: ${inferredNow}`}>
-                  <RotateCcw size={10} />
-                  Revert to {inferredNow}
-                </button>
-              )}
-              {!isOverridden && continent && (
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  (auto-detected —{" "}
-                  <button className="underline" style={{ color: "var(--accent)" }}
-                    onClick={() => setIsOverridden(true)}>override</button>)
-                </span>
-              )}
-            </label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Continent</label>
             <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
               value={continent}
-              disabled={!isOverridden && !!continent}
               onChange={(e) => setContinent(e.target.value as Continent | "")}>
               <option value="">Unknown</option>
               {CONTINENTS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -333,7 +295,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
             <label className="text-xs" style={{ color: "var(--text-muted)" }}>Trip Type</label>
             <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={selectStyle(categoryId)}
               value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Trip type (optional)</option>
+              <option value="">Select type</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
               ))}
@@ -362,7 +324,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {/* Group + Status */}
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-xs" style={{ color: "var(--text-muted)" }}>Group</label>
+              <label className="text-xs" style={{ color: "var(--text-muted)" }}>Travel Group</label>
               <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
                 value={groupId} onChange={(e) => setGroupId(e.target.value)}>
                 {groups.map((g) => (
@@ -380,7 +342,10 @@ export default function TripEditModal({ trip, onClose }: Props) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setWantsToSchedule(true)}
+                    onClick={() => {
+                      setWantsToSchedule(true);
+                      setTimeout(() => scheduleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                    }}
                     className="shrink-0 text-xs px-2 py-2 rounded-md transition-opacity hover:opacity-80"
                     style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)", whiteSpace: "nowrap" }}
                     title="Set calendar dates for this trip"
@@ -391,7 +356,9 @@ export default function TripEditModal({ trip, onClose }: Props) {
               ) : (
                 <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
                   value={status} onChange={(e) => setStatus(e.target.value as TripStatus)}>
-                  {SCHEDULED_STATUSES.map((o) => (
+                  {SCHEDULED_STATUSES.filter((o) =>
+                    trip.status === "completed" ? o.value === "completed" : true
+                  ).map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
@@ -401,7 +368,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Duration */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Intended Duration</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Duration</label>
             <div className="flex items-center gap-2">
               <input type="number" min={1} max={52}
                 className="w-20 text-sm rounded-md px-3 py-2 outline-none text-center" style={inputStyle}
@@ -417,10 +384,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Estimated Cost */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Estimated Cost
-              <span className="ml-1 opacity-60">(optional)</span>
-            </label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Estimated Cost</label>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-2 rounded-md"
                 style={{ background: "var(--surface-3)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
@@ -436,7 +400,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Scheduled range */}
           {localIsScheduled && (
-            <div className="flex flex-col gap-2">
+            <div ref={scheduleRef} className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <label className="text-xs" style={{ color: "var(--text-muted)" }}>Calendar Range</label>
                 {wantsToSchedule && (
@@ -550,6 +514,14 @@ export default function TripEditModal({ trip, onClose }: Props) {
               )}
             </div>
           )}
+
+          {/* Image URL */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Image URL</label>
+            <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
+              value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://..." />
+          </div>
 
           {/* Notes */}
           <div className="flex flex-col gap-1">

@@ -146,7 +146,9 @@ export const useTripStore = create<TripStore>()(
       scheduleTrip: (id, range) =>
         set((s) => ({
           trips: s.trips.map((t) =>
-            t.id === id ? { ...t, scheduled: range, status: "planning" } : t
+            t.id === id
+              ? { ...t, scheduled: range, status: t.status === "completed" ? "completed" : "planning" }
+              : t
           ),
         })),
 
@@ -341,7 +343,7 @@ export const selectUnscheduledTrips = (
   return ordered.filter((t) => {
     if (!matchesSearch(t, filters.searchQuery)) return false;
     if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
-    if (filters.continents.length && t.continent && !filters.continents.includes(t.continent)) return false;
+    if (filters.continents.length && (!t.continent || !filters.continents.includes(t.continent))) return false;
     if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
     return true;
   });
@@ -354,7 +356,7 @@ export const selectScheduledTrips = (trips: Trip[], filters: FilterState) =>
     if (t.status === "completed" && !filters.showCompleted) return false;
     if (!matchesSearch(t, filters.searchQuery)) return false;
     if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
-    if (filters.continents.length && t.continent && !filters.continents.includes(t.continent)) return false;
+    if (filters.continents.length && (!t.continent || !filters.continents.includes(t.continent))) return false;
     if (filters.statuses.length && !filters.statuses.includes(t.status)) return false;
     if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
     return true;

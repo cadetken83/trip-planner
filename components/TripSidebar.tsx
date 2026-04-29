@@ -282,7 +282,7 @@ export default function TripSidebar() {
           {dupError && <p className="text-xs" style={{ color: "#ef4444" }}>{dupError}</p>}
 
           <input className="w-full text-sm rounded-md px-3 py-1.5 outline-none" style={inputStyle}
-            placeholder="Destination (city, country optional)"
+            placeholder="Destination (city, country)"
             value={newDest} onChange={(e) => setNewDest(e.target.value)} />
           {inferred && newDest && (
             <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>📍 {inferred}</p>
@@ -290,7 +290,7 @@ export default function TripSidebar() {
 
           <select className="w-full text-sm rounded-md px-2 py-1.5 outline-none" style={selectStyle(newCategoryId)}
             value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)}>
-            <option value="">Trip type (optional)</option>
+            <option value="">Select type</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
             ))}
@@ -413,12 +413,12 @@ export default function TripSidebar() {
                           <Star size={11} fill={g.isDefault ? "currentColor" : "none"} />
                         </button>
                         <button onClick={() => { setEditingGroupId(g.id); setEditingGroupName(g.name); setGroupDupError(""); }}
-                          className="w-6 h-6 rounded flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+                          className="w-6 h-6 rounded flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
                           style={{ color: "var(--text-muted)" }} title="Rename">
                           <Pencil size={11} />
                         </button>
                         <button onClick={() => handleDeleteGroup(g.id)}
-                          className="w-6 h-6 rounded flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+                          className="w-6 h-6 rounded flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
                           style={{ color: "var(--text-muted)" }} title="Delete">
                           <Trash2 size={11} />
                         </button>
@@ -529,12 +529,12 @@ export default function TripSidebar() {
                     ) : (
                       <div className="flex items-center gap-0.5 shrink-0">
                         <button onClick={() => { setEditingCatId(c.id); setEditingCatName(c.name); setEditingCatIcon(c.icon); setCatDupError(""); }}
-                          className="w-6 h-6 rounded flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+                          className="w-6 h-6 rounded flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
                           style={{ color: "var(--text-muted)" }} title="Edit">
                           <Pencil size={11} />
                         </button>
                         <button onClick={() => handleDeleteCategory(c.id)}
-                          className="w-6 h-6 rounded flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+                          className="w-6 h-6 rounded flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
                           style={{ color: "var(--text-muted)" }} title="Delete">
                           <Trash2 size={11} />
                         </button>

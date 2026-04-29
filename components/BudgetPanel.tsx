@@ -200,12 +200,15 @@ export default function BudgetPanel() {
   const [maxFutureYear, setMaxFutureYear] = useState(
     Math.max(defaultMaxFuture, ...scheduledYears, ...allocationYears)
   );
+  const [showPastYears, setShowPastYears] = useState(false);
 
   const minPastYear = Math.min(currentYear, ...scheduledYears, ...allocationYears);
-  const years = Array.from(
+  const allYears = Array.from(
     { length: maxFutureYear - minPastYear + 1 },
     (_, i) => minPastYear + i
   );
+  const years = showPastYears ? allYears : allYears.filter((y) => y >= currentYear);
+  const hasPastYears = allYears.some((y) => y < currentYear);
 
   // Overall totals
   const totalSpent = trips
@@ -361,30 +364,29 @@ export default function BudgetPanel() {
               </div>
             )}
             {[
-              { label: "Total Budget",   value: fmt(totalBudget, currency),     color: "var(--text-primary)" },
-              { label: "Allocated",      value: fmt(totalAllocated, currency),  color: "var(--text-secondary)" },
-              { label: "Committed",      value: fmt(totalCommitted, currency),  color: "#f59e0b" },
-              { label: "Spent",          value: fmt(totalSpent, currency),      color: "#6366f1" },
+              { label: "Total Budget",   value: fmt(totalBudget, currency),     color: "var(--text-primary)",  pct: null },
+              { label: "Allocated",      value: fmt(totalAllocated, currency),  color: "var(--text-secondary)", pct: totalBudget > 0 ? Math.round(totalAllocated / totalBudget * 100) : null },
+              { label: "Committed",      value: fmt(totalCommitted, currency),  color: "#f59e0b",              pct: totalBudget > 0 ? Math.round(totalCommitted / totalBudget * 100) : null },
+              { label: "Spent",          value: fmt(totalSpent, currency),      color: "#6366f1",              pct: totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : null },
               {
                 label: "Remaining",
                 value: fmt(Math.abs(totalRemaining), currency) + (totalRemaining < 0 ? " over" : ""),
                 color: totalRemaining < 0 ? "#ef4444" : "#10B981",
+                pct: totalBudget > 0 ? Math.round(Math.abs(totalRemaining) / totalBudget * 100) : null,
               },
             ].map((s) => (
               <div key={s.label} className="flex flex-col gap-0.5 min-w-[110px]">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>{s.label}</span>
-                <span className="text-sm font-bold" style={{ color: s.color }}>{s.value}</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm font-bold" style={{ color: s.color }}>{s.value}</span>
+                  {s.pct !== null && (
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>{s.pct}%</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
-
-        {/* ── Budget by Year ── */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-display text-base" style={{ color: "var(--text-secondary)" }}>
-            Budget by Year
-          </h3>
-        </div>
 
         <div className="rounded-xl overflow-hidden mb-3"
           style={{ border: "1px solid var(--border)", background: "var(--surface-1)" }}>
@@ -515,6 +517,18 @@ export default function BudgetPanel() {
             );
           })}
         </div>
+
+        {/* Show/hide past years */}
+        {hasPastYears && (
+          <button
+            onClick={() => setShowPastYears((v) => !v)}
+            className="text-xs px-2 py-1 mb-2 transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+            {showPastYears ? "Hide past years" : "Show past years"}
+          </button>
+        )}
 
         {/* Add future year */}
         <button
@@ -798,10 +812,10 @@ export default function BudgetPanel() {
             <Monitor size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
             <div>
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
-                Display
+                Customizations
               </h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Appearance and navigation preferences.
+                Set your appearance and navigation preferences.
               </p>
             </div>
           </div>

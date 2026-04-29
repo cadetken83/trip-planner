@@ -83,7 +83,7 @@ export default function FilterBar() {
             placeholder="Search trips…"
             value={filters.searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="outline-none bg-transparent text-xs w-32"
+            className="outline-none bg-transparent text-xs w-44"
             style={{ color: "var(--text-primary)" }}
           />
           {filters.searchQuery && (

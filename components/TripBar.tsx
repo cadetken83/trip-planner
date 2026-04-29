@@ -22,16 +22,11 @@ export const BAR_HEIGHT = 52;
 // Distance each bar must bleed to bridge the inter-cell gap
 const BLEED = 14;
 
-const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }> = {
-  planning:  { label: "Planning",  bg: "#f59e0b", color: "#1c1917" },
-  booked:    { label: "Booked",    bg: "#10B981", color: "#fff"    },
-  completed: { label: "Done",      bg: "#6366F1", color: "#fff"    },
-};
-
 function isBookByOverdue(trip: Trip): boolean {
   if (!trip.bookBy || trip.status === "booked" || trip.status === "completed") return false;
   const now = new Date();
-  return trip.bookBy.year * 12 + trip.bookBy.month < now.getFullYear() * 12 + now.getMonth();
+  const limit = new Date(trip.bookBy.year, trip.bookBy.month - 1, trip.bookBy.day ?? 1);
+  return limit < now;
 }
 
 export default function TripBar({ trip, group, position }: Props) {
@@ -58,7 +53,6 @@ export default function TripBar({ trip, group, position }: Props) {
   const isEnd    = position === "end"   || position === "single";
 
   const category = categories.find((c) => c.id === trip.categoryId);
-  const badge    = STATUS_BADGE[trip.status];
   const overdue  = isBookByOverdue(trip);
 
   const conflictingBlackouts = (() => {
@@ -300,20 +294,6 @@ export default function TripBar({ trip, group, position }: Props) {
                 </span>
               )}
             </div>
-          </div>
-        )}
-
-        {/* ── Status badge (top-right, hidden when actions showing) ── */}
-        {isStart && badge && !showActions && (
-          <div style={{
-            position: "absolute", top: "4px", right: "6px",
-            background: badge.bg, color: badge.color,
-            fontSize: "8px", fontWeight: 700,
-            padding: "2px 6px", borderRadius: "4px",
-            letterSpacing: "0.05em", textTransform: "uppercase",
-            pointerEvents: "none",
-          }}>
-            {badge.label}
           </div>
         )}
 

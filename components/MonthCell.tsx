@@ -52,10 +52,7 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
     : activeDragType === "resize-start" || activeDragType === "resize-end" ? "#34d399"
     : "var(--accent)";
 
-  const borderColor = isOver
-    ? highlightColor
-    : isCurrentMonth ? "var(--accent)"
-    : "var(--border-subtle)";
+  const borderColor = isOver ? highlightColor : "var(--border-subtle)";
 
   const bgColor = isOver
     ? activeDragType === "move-bar"     ? "rgba(167,139,250,0.12)"
@@ -93,18 +90,21 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
       )}
 
       {/* Month label — fixed height, always at top */}
-      <span
-        style={{
+      <div style={{ height: `${LABEL_H}px`, display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+        {isCurrentMonth && (
+          <div style={{
+            width: "4px", height: "4px", borderRadius: "50%",
+            background: "var(--accent)", flexShrink: 0,
+          }} />
+        )}
+        <span style={{
           fontSize: "11px",
           fontWeight: 500,
-          height: `${LABEL_H}px`,
-          lineHeight: `${LABEL_H}px`,
-          flexShrink: 0,
           color: isCurrentMonth ? "var(--accent)" : "var(--text-muted)",
-        }}
-      >
-        {MONTH_NAMES[month]}
-      </span>
+        }}>
+          {MONTH_NAMES[month]}
+        </span>
+      </div>
 
       {/* Blackout label chips */}
       {blackoutLabels.length > 0 && (
