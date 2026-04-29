@@ -32,6 +32,10 @@
   --accent:     #fbbf24;  /* bright amber */
   --accent-dim: #78350f;
 
+  /* Primary action buttons — fixed amber in both themes */
+  --btn-primary:      #fbbf24;
+  --btn-primary-text: #1c1917;
+
   --scrollbar-track: #1a1714;
   --scrollbar-thumb: #6b6460;
 }
@@ -59,6 +63,10 @@
 
   --accent:     #92400e;  /* dark amber — good contrast on light */
   --accent-dim: #fef3c7;
+
+  /* Primary action buttons — fixed amber in both themes */
+  --btn-primary:      #fbbf24;
+  --btn-primary-text: #1c1917;
 
   --scrollbar-track: #e2dcd4;
   --scrollbar-thumb: #a09890;

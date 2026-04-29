@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useTripStore } from "@/store/useTripStore";
+import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
 import { Trip, TripStatus } from "@/types";
 import TripEditModal from "@/components/TripEditModal";
 import { inferContinent } from "@/utils/inferContinent";
-import { MapPin, Clock, CalendarDays, BookOpen, Pencil, Check, Tag, X, Plus, AlertTriangle } from "lucide-react";
+import { MapPin, Clock, CalendarDays, BookOpen, Pencil, Check, Tag, X, Plus, AlertTriangle, Ban } from "lucide-react";
 
 function uid() { return crypto.randomUUID(); }
 
@@ -59,16 +59,18 @@ function isBookByOverdue(trip: Trip): boolean {
 
 function TripCard({ trip }: { trip: Trip }) {
   const { groups, categories } = useTripStore();
+  const blackoutDates = useTripStore((s) => s.blackoutDates);
   const [showEdit, setShowEdit] = useState(false);
 
   const group     = groups.find((g) => g.id === trip.groupId);
   const category  = categories.find((c) => c.id === trip.categoryId);
-  const color     = group?.color ?? "#78716c";
-  const sm        = STATUS_META[trip.status];
-  const badge     = STATUS_BADGE_STYLE[trip.status];
-  const dateStr   = formatDateRange(trip);
-  const overdue   = isBookByOverdue(trip);
-  const hasImage  = !!trip.imageUrl;
+  const color        = group?.color ?? "#78716c";
+  const sm           = STATUS_META[trip.status];
+  const badge        = STATUS_BADGE_STYLE[trip.status];
+  const dateStr      = formatDateRange(trip);
+  const overdue      = isBookByOverdue(trip);
+  const hasImage     = !!trip.imageUrl;
+  const hasConflict  = tripOverlapsBlackout(trip, blackoutDates);
 
   // Placeholder gradient when no image
   const imageBg = hasImage
@@ -180,6 +182,14 @@ function TripCard({ trip }: { trip: Trip }) {
             >
               {overdue && <AlertTriangle size={10} />}
               Book by{trip.bookBy.day ? ` ${trip.bookBy.day}` : ""} {MONTH_NAMES[trip.bookBy.month]} {trip.bookBy.year}
+            </span>
+          )}
+
+          {/* Blackout conflict */}
+          {hasConflict && (
+            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#ef4444" }}>
+              <Ban size={10} />
+              Overlaps a blackout period
             </span>
           )}
 
@@ -442,7 +452,7 @@ export default function TripsListPanel() {
                 style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>Cancel</button>
               <button onClick={handleAddTrip}
                 className="px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ background: "var(--accent)", color: "#1c1917" }}>Add Trip</button>
+                style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>Add Trip</button>
             </div>
           </div>
         )}

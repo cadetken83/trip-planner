@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTripStore } from "@/store/useTripStore";
 import { inferContinent } from "@/utils/inferContinent";
 import { Trip, TripStatus, Continent } from "@/types";
-import { X, Trash2, RotateCcw } from "lucide-react";
+import { X, Trash2, RotateCcw, Ban } from "lucide-react";
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
@@ -28,8 +28,9 @@ type Props = {
 
 export default function TripEditModal({ trip, onClose }: Props) {
   const { trips, groups, updateTrip, removeTrip } = useTripStore();
-  const categories = useTripStore((s) => s.categories);
-  const currency = useTripStore((s) => s.budget.currency);
+  const categories    = useTripStore((s) => s.categories);
+  const currency      = useTripStore((s) => s.budget.currency);
+  const blackoutDates = useTripStore((s) => s.blackoutDates);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear - 2 + i);
 
@@ -186,6 +187,15 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
   const inferredNow = inferContinent(destination);
 
+  // Blackout conflict — derived from current form date state, updates reactively
+  const conflictingBlackouts = localIsScheduled ? blackoutDates.filter((b) => {
+    const ts = startYear * 12 + startMonth + 1;
+    const te = endYear   * 12 + endMonth   + 1;
+    const bs = b.startYear * 12 + b.startMonth;
+    const be = b.endYear   * 12 + b.endMonth;
+    return ts <= be && te >= bs;
+  }) : [];
+
   const inputStyle = {
     background: "var(--surface-3)",
     color: "var(--text-primary)",
@@ -235,6 +245,21 @@ export default function TripEditModal({ trip, onClose }: Props) {
                 style={{ background: "#f59e0b", color: "#0c0a09" }}>
                 Confirm change
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Blackout conflict warning */}
+        {conflictingBlackouts.length > 0 && (
+          <div className="px-5 py-3 flex items-start gap-2 shrink-0"
+            style={{ background: "#ef444411", borderBottom: "1px solid #ef444433" }}>
+            <Ban size={14} style={{ color: "#ef4444", flexShrink: 0, marginTop: "2px" }} />
+            <div>
+              <p className="text-sm font-medium" style={{ color: "#ef4444" }}>Scheduling Conflict</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Dates overlap: <strong>{conflictingBlackouts.map((b) => b.label).join(", ")}</strong>.
+                Adjust dates or update blackout periods in Settings.
+              </p>
             </div>
           </div>
         )}
@@ -566,7 +591,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
             </button>
             <button onClick={handleSave}
               className="text-sm px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-90"
-              style={{ background: "var(--accent)", color: "#1c1917" }}>
+              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
               Save Changes
             </button>
           </div>

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   Trip, Group, FilterState, ScheduledRange,
-  TripCategory, Theme, Budget,
+  TripCategory, Theme, Budget, BlackoutDate,
   DEFAULT_GROUPS, DEFAULT_CATEGORIES, DEFAULT_BUDGET, GROUP_COLOR_PALETTE,
 } from "@/types";
 
@@ -46,6 +46,7 @@ type TripStore = {
   categories: TripCategory[];
   filters: FilterState;
   theme: Theme;
+  defaultView: "planner" | "trips";
 
   addTrip: (trip: Trip) => void;
   updateTrip: (id: string, updates: Partial<Trip>) => void;
@@ -76,10 +77,16 @@ type TripStore = {
   clearFilters: () => void;
 
   toggleTheme: () => void;
+  setDefaultView: (v: "planner" | "trips") => void;
 
   budget: Budget;
   setBudget: (updates: Partial<Omit<Budget, "annualAllocations">>) => void;
   setAnnualAllocation: (year: number, amount: number) => void;
+
+  blackoutDates: BlackoutDate[];
+  addBlackoutDate: (b: BlackoutDate) => void;
+  updateBlackoutDate: (id: string, updates: Partial<Omit<BlackoutDate, "id">>) => void;
+  removeBlackoutDate: (id: string) => void;
 
   importData: (data: {
     trips: Trip[];
@@ -87,6 +94,7 @@ type TripStore = {
     groups: Group[];
     categories: TripCategory[];
     budget?: Budget;
+    blackoutDates?: BlackoutDate[];
   }) => void;
 };
 
@@ -107,7 +115,9 @@ export const useTripStore = create<TripStore>()(
       groups: DEFAULT_GROUPS,
       categories: DEFAULT_CATEGORIES,
       budget: DEFAULT_BUDGET,
+      blackoutDates: [],
       theme: "light",
+      defaultView: "planner",
       filters: {
         groupIds: [], continents: [], statuses: [],
         categoryIds: [], showCompleted: false, searchQuery: "",
@@ -232,11 +242,9 @@ export const useTripStore = create<TripStore>()(
         }),
 
       toggleTheme: () =>
-        set((s) => {
-          const next = s.theme === "dark" ? "light" : "dark";
-          document.documentElement.setAttribute("data-theme", next);
-          return { theme: next };
-        }),
+        set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
+
+      setDefaultView: (v) => set({ defaultView: v }),
 
       setBudget: (updates) =>
         set((s) => ({ budget: { ...s.budget, ...updates } })),
@@ -248,6 +256,17 @@ export const useTripStore = create<TripStore>()(
           },
         })),
 
+      addBlackoutDate: (b) =>
+        set((s) => ({ blackoutDates: [...s.blackoutDates, b] })),
+
+      updateBlackoutDate: (id, updates) =>
+        set((s) => ({
+          blackoutDates: s.blackoutDates.map((b) => b.id === id ? { ...b, ...updates } : b),
+        })),
+
+      removeBlackoutDate: (id) =>
+        set((s) => ({ blackoutDates: s.blackoutDates.filter((b) => b.id !== id) })),
+
       importData: (data) =>
         set({
           trips: data.trips,
@@ -255,6 +274,7 @@ export const useTripStore = create<TripStore>()(
           groups: data.groups?.length ? data.groups : DEFAULT_GROUPS,
           categories: data.categories?.length ? data.categories : DEFAULT_CATEGORIES,
           budget: data.budget ?? DEFAULT_BUDGET,
+          blackoutDates: data.blackoutDates ?? [],
           filters: {
             groupIds: [], continents: [], statuses: [],
             categoryIds: [], showCompleted: false, searchQuery: "",
@@ -286,6 +306,8 @@ export const useTripStore = create<TripStore>()(
           },
           categories: persisted?.categories ?? current.categories,
           theme: persisted?.theme ?? "light",
+          defaultView: persisted?.defaultView ?? "planner",
+          blackoutDates: persisted?.blackoutDates ?? [],
           groups: (persisted?.groups ?? current.groups).map((g: any) => ({
             isDefault: false, ...g,
           })),
@@ -337,3 +359,22 @@ export const selectScheduledTrips = (trips: Trip[], filters: FilterState) =>
     if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
     return true;
   });
+
+// ─── Blackout helpers ─────────────────────────────────────────────────────────
+
+export function blackoutTouchesMonth(b: BlackoutDate, month: number, year: number): boolean {
+  const m = year * 12 + month;
+  return m >= b.startYear * 12 + b.startMonth && m <= b.endYear * 12 + b.endMonth;
+}
+
+export function tripOverlapsBlackout(trip: Trip, blackouts: BlackoutDate[]): boolean {
+  if (!trip.scheduled) return false;
+  // +1 normalizes trip months (0-indexed) to match BlackoutDate months (1-indexed)
+  const ts = trip.scheduled.startYear * 12 + trip.scheduled.startMonth + 1;
+  const te = trip.scheduled.endYear   * 12 + trip.scheduled.endMonth   + 1;
+  return blackouts.some((b) => {
+    const bs = b.startYear * 12 + b.startMonth;
+    const be = b.endYear   * 12 + b.endMonth;
+    return ts <= be && te >= bs;
+  });
+}

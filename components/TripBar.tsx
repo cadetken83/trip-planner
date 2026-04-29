@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Trip, Group } from "@/types";
 import { useTripStore } from "@/store/useTripStore";
-import { X, Check, RotateCcw, AlertTriangle } from "lucide-react";
+import { X, Check, RotateCcw, AlertTriangle, Ban } from "lucide-react";
 import TripEditModal from "@/components/TripEditModal";
 
 export type BarPosition = "start" | "middle" | "end" | "single";
@@ -36,9 +36,21 @@ function isBookByOverdue(trip: Trip): boolean {
 
 export default function TripBar({ trip, group, position }: Props) {
   const { unscheduleTrip, bookTrip, unbookTrip, categories } = useTripStore();
-  const [hovered,           setHovered]           = useState(false);
-  const [showEdit,          setShowEdit]          = useState(false);
-  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const blackoutDates = useTripStore((s) => s.blackoutDates);
+  const [hovered,              setHovered]              = useState(false);
+  const [showEdit,             setShowEdit]             = useState(false);
+  const [showRemoveConfirm,    setShowRemoveConfirm]    = useState(false);
+  const [showBlackoutPopover,  setShowBlackoutPopover]  = useState(false);
+  const conflictBtnRef = useRef<HTMLButtonElement>(null);
+  const hideTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function openBlackoutPopover() {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    setShowBlackoutPopover(true);
+  }
+  function closeBlackoutPopover() {
+    hideTimerRef.current = setTimeout(() => setShowBlackoutPopover(false), 120);
+  }
 
   const color    = group?.color ?? "#78716c";
   const isBooked = trip.status === "booked";
@@ -48,6 +60,19 @@ export default function TripBar({ trip, group, position }: Props) {
   const category = categories.find((c) => c.id === trip.categoryId);
   const badge    = STATUS_BADGE[trip.status];
   const overdue  = isBookByOverdue(trip);
+
+  const conflictingBlackouts = (() => {
+    if (!trip.scheduled) return [];
+    // +1 normalizes trip months (0-indexed) to match BlackoutDate months (1-indexed)
+    const ts = trip.scheduled.startYear * 12 + trip.scheduled.startMonth + 1;
+    const te = trip.scheduled.endYear   * 12 + trip.scheduled.endMonth   + 1;
+    return blackoutDates.filter((b) => {
+      const bs = b.startYear * 12 + b.startMonth;
+      const be = b.endYear   * 12 + b.endMonth;
+      return ts <= be && te >= bs;
+    });
+  })();
+  const hasBlackoutConflict = conflictingBlackouts.length > 0;
 
   // ── Draggables ──────────────────────────────────────────────────────────────
   const {
@@ -101,11 +126,13 @@ export default function TripBar({ trip, group, position }: Props) {
   const textColor = textOnBar ? "#fff" : color;
   const metaColor = textOnBar ? "rgba(255,255,255,0.82)" : `${color}bb`;
 
-  const barBorder = overdue && isStart
-    ? `2px solid #f59e0b`
-    : isStart
-      ? isBooked ? `2px solid ${color}` : `1.5px dashed ${color}88`
-      : `1px solid ${color}44`;
+  const barBorder = hasBlackoutConflict && isStart
+    ? `2px solid #ef4444`
+    : overdue && isStart
+      ? `2px solid #f59e0b`
+      : isStart
+        ? isBooked ? `2px solid ${color}` : `1.5px dashed ${color}88`
+        : `1px solid ${color}44`;
 
   return (
     <>
@@ -146,10 +173,85 @@ export default function TripBar({ trip, group, position }: Props) {
           </div>
         )}
 
+        {/* ── Blackout conflict indicator (absolutely positioned, zIndex 20) ── */}
+        {hasBlackoutConflict && isStart && (
+          <div style={{
+            position: "absolute", left: "6px", top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 20, pointerEvents: "auto",
+          }}>
+            <button
+              ref={conflictBtnRef}
+              onMouseEnter={openBlackoutPopover}
+              onMouseLeave={closeBlackoutPopover}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setShowBlackoutPopover((v) => !v); }}
+              style={{
+                display: "flex", alignItems: "center",
+                background: "transparent", border: "none",
+                cursor: "pointer", padding: 0, lineHeight: 0,
+              }}>
+              <Ban size={13} style={{ color: "#f87171" }} />
+            </button>
+            {showBlackoutPopover && createPortal(
+              <div
+                onMouseEnter={openBlackoutPopover}
+                onMouseLeave={closeBlackoutPopover}
+                style={{
+                  position: "fixed",
+                  top: (conflictBtnRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+                  left: (conflictBtnRef.current?.getBoundingClientRect().left ?? 0),
+                  zIndex: 9999,
+                  background: "var(--surface-1)",
+                  border: "1px solid #ef4444",
+                  borderRadius: "8px",
+                  padding: "10px 12px",
+                  minWidth: "220px",
+                  maxWidth: "280px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <Ban size={13} style={{ color: "#ef4444", flexShrink: 0 }} />
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444" }}>Scheduling Conflict</span>
+                </div>
+                <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                  <strong>{trip.title}</strong> overlaps:
+                </p>
+                {conflictingBlackouts.map((b) => (
+                  <div key={b.id} style={{
+                    fontSize: "11px", color: "var(--text-primary)",
+                    background: "var(--surface-3)", borderRadius: "4px",
+                    padding: "3px 7px", marginBottom: "6px",
+                  }}>
+                    {b.label}
+                  </div>
+                ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginTop: "8px" }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); unscheduleTrip(trip.id); setShowBlackoutPopover(false); }}
+                    style={{
+                      fontSize: "11px", fontWeight: 600, padding: "4px 10px",
+                      borderRadius: "5px", border: "none", cursor: "pointer",
+                      background: "#ef4444", color: "#fff",
+                    }}>
+                    Reschedule Trip
+                  </button>
+                  <p style={{ fontSize: "10px", color: "var(--text-muted)", textAlign: "center" }}>
+                    or edit blackout dates on the Settings page
+                  </p>
+                </div>
+              </div>,
+              document.body
+            )}
+          </div>
+        )}
+
         {/* ── Content (start / single only) ── */}
         {isStart && (
           <div style={{
-            position: "absolute", left: "12px", right: "10px",
+            position: "absolute",
+            left: hasBlackoutConflict ? "22px" : "12px",
+            right: "10px",
             top: "50%", transform: "translateY(-50%)",
             display: "flex", flexDirection: "column", gap: "3px",
             pointerEvents: "none",

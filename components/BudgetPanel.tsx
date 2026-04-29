@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTripStore } from "@/store/useTripStore";
-import { Trip } from "@/types";
-import { AlertTriangle, Plus } from "lucide-react";
+import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
+import { Trip, BlackoutDate } from "@/types";
+import { AlertTriangle, Ban, Check, Monitor, Pencil, Plus, Trash2, Wallet, X } from "lucide-react";
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -101,11 +103,37 @@ function AllocationInput({
   );
 }
 
+// ── Segmented toggle ───────────────────────────────────────────────────────────
+function SegmentedToggle({ value, options, onChange }: {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex rounded-lg shrink-0"
+      style={{ border: "1px solid var(--border)", background: "var(--surface-3)", overflow: "hidden" }}>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className="px-4 py-1.5 text-xs font-medium transition-colors"
+          style={{
+            background: value === opt.value ? "var(--btn-primary)" : "transparent",
+            color: value === opt.value ? "var(--btn-primary-text)" : "var(--text-muted)",
+          }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── BudgetPanel ───────────────────────────────────────────────────────────────
 type PendingAllocation = { year: number; amount: number; newTotalAllocated: number };
 
 export default function BudgetPanel() {
-  const { trips, budget, setBudget, setAnnualAllocation } = useTripStore();
+  const { trips, budget, setBudget, setAnnualAllocation, blackoutDates, addBlackoutDate, updateBlackoutDate, removeBlackoutDate, theme, toggleTheme, defaultView, setDefaultView } = useTripStore();
   const { currency, totalBudget, annualAllocations } = budget;
 
   const now = new Date();
@@ -118,6 +146,52 @@ export default function BudgetPanel() {
 
   // Pending over-allocation prompt
   const [pendingAlloc, setPendingAlloc] = useState<PendingAllocation | null>(null);
+
+  // Blackout date add form
+  const [bdLabel,      setBdLabel]      = useState("");
+  const [bdStartMonth, setBdStartMonth] = useState(1);
+  const [bdStartYear,  setBdStartYear]  = useState(currentYear);
+  const [bdEndMonth,   setBdEndMonth]   = useState(1);
+  const [bdEndYear,    setBdEndYear]    = useState(currentYear);
+  const [bdError,      setBdError]      = useState("");
+
+  // Blackout conflict feedback (trips affected by a newly added/edited blackout)
+  const [bdConflicts, setBdConflicts] = useState<Trip[]>([]);
+
+  // Blackout date inline editing
+  const [editBdId,         setEditBdId]         = useState<string | null>(null);
+  const [editBdLabel,      setEditBdLabel]      = useState("");
+  const [editBdStartMonth, setEditBdStartMonth] = useState(1);
+  const [editBdStartYear,  setEditBdStartYear]  = useState(currentYear);
+  const [editBdEndMonth,   setEditBdEndMonth]   = useState(1);
+  const [editBdEndYear,    setEditBdEndYear]    = useState(currentYear);
+  const [editBdError,      setEditBdError]      = useState("");
+
+  function startEditBd(b: BlackoutDate) {
+    setEditBdId(b.id);
+    setEditBdLabel(b.label);
+    setEditBdStartMonth(b.startMonth);
+    setEditBdStartYear(b.startYear);
+    setEditBdEndMonth(b.endMonth);
+    setEditBdEndYear(b.endYear);
+    setEditBdError("");
+  }
+
+  function saveEditBd() {
+    if (!editBdLabel.trim()) { setEditBdError("Label required"); return; }
+    const start = editBdStartYear * 12 + editBdStartMonth;
+    const end   = editBdEndYear   * 12 + editBdEndMonth;
+    if (end < start) { setEditBdError("End must be after start"); return; }
+    const updated = {
+      id: editBdId!, label: editBdLabel.trim(),
+      startMonth: editBdStartMonth, startYear: editBdStartYear,
+      endMonth: editBdEndMonth,     endYear: editBdEndYear,
+    };
+    updateBlackoutDate(editBdId!, updated);
+    setEditBdId(null);
+    const affected = trips.filter((t) => tripOverlapsBlackout(t, [updated]));
+    if (affected.length > 0) setBdConflicts(affected);
+  }
 
   // Year range: past years with trips or allocations, current through max future
   const scheduledYears = trips.filter((t) => t.scheduled).map((t) => t.scheduled!.startYear);
@@ -181,12 +255,32 @@ export default function BudgetPanel() {
     <main className="flex-1 overflow-y-auto px-6 py-5" style={{ background: "var(--surface-0)" }}>
       <div style={{ maxWidth: "800px", margin: "0 auto" }}>
 
-        {/* ── Settings header ── */}
-        <div className="rounded-xl p-5 mb-6"
+        {/* ── Page title ── */}
+        <h1 className="font-display text-2xl mb-6" style={{ color: "var(--text-primary)" }}>
+          Settings
+        </h1>
+
+        {/* ══════════════════════════════════════════════════════════
+            Section 1 — Travel Budget
+            ══════════════════════════════════════════════════════════ */}
+        <div className="rounded-xl mb-8 overflow-hidden"
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
-          <h2 className="font-display text-lg mb-4" style={{ color: "var(--text-primary)" }}>
-            Travel Budget
-          </h2>
+
+          {/* Section header */}
+          <div className="flex items-center gap-3 px-5 py-4"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+            <Wallet size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
+            <div>
+              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
+                Travel Budget
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Set your overall budget, currency, and year-by-year allocations.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5">
           <div className="flex flex-wrap items-end gap-6">
 
             {/* Currency */}
@@ -219,7 +313,7 @@ export default function BudgetPanel() {
                   />
                   <button onClick={() => commitTotalBudget(totalRaw)}
                     style={{
-                      background: "var(--accent)", color: "#1c1917",
+                      background: "var(--btn-primary)", color: "var(--btn-primary-text)",
                       padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 700,
                       cursor: "pointer",
                     }}>
@@ -250,7 +344,6 @@ export default function BudgetPanel() {
               )}
             </div>
           </div>
-        </div>
 
         {/* ── Overall summary ── */}
         {totalBudget > 0 && (
@@ -495,6 +588,258 @@ export default function BudgetPanel() {
             </div>
           ))}
         </div>
+
+          </div>{/* /p-5 */}
+        </div>{/* /Travel Budget card */}
+
+        {/* ══════════════════════════════════════════════════════════
+            Section 2 — Blackout Dates
+            ══════════════════════════════════════════════════════════ */}
+        <div className="rounded-xl overflow-hidden"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
+
+          {/* Section header */}
+          <div className="flex items-center gap-3 px-5 py-4"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+            <Ban size={16} style={{ color: "#f87171", flexShrink: 0 }} />
+            <div>
+              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
+                Blackout Dates
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Define periods when you can't travel. Scheduled trips that overlap will show a conflict warning.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5">
+
+          {/* Add form */}
+          <div className="flex flex-wrap gap-2 mb-3 items-end">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Label</span>
+              <input
+                className="text-xs rounded-md px-2 py-1.5 outline-none w-40"
+                style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                placeholder="e.g. Q4 Freeze"
+                value={bdLabel}
+                onChange={(e) => { setBdLabel(e.target.value); setBdError(""); }}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Start</span>
+              <div className="flex gap-1">
+                <select className="text-xs rounded-md px-2 py-1.5 outline-none"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}
+                  value={bdStartMonth} onChange={(e) => setBdStartMonth(Number(e.target.value))}>
+                  {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                </select>
+                <input type="number" className="text-xs rounded-md px-2 py-1.5 outline-none w-16 text-center"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                  value={bdStartYear} onChange={(e) => setBdStartYear(Number(e.target.value))} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>End</span>
+              <div className="flex gap-1">
+                <select className="text-xs rounded-md px-2 py-1.5 outline-none"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}
+                  value={bdEndMonth} onChange={(e) => setBdEndMonth(Number(e.target.value))}>
+                  {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                </select>
+                <input type="number" className="text-xs rounded-md px-2 py-1.5 outline-none w-16 text-center"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                  value={bdEndYear} onChange={(e) => setBdEndYear(Number(e.target.value))} />
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (!bdLabel.trim()) { setBdError("Label required"); return; }
+                const start = bdStartYear * 12 + bdStartMonth;
+                const end   = bdEndYear   * 12 + bdEndMonth;
+                if (end < start) { setBdError("End must be after start"); return; }
+                const newBd = {
+                  id: crypto.randomUUID(),
+                  label: bdLabel.trim(),
+                  startMonth: bdStartMonth, startYear: bdStartYear,
+                  endMonth: bdEndMonth,     endYear: bdEndYear,
+                };
+                addBlackoutDate(newBd);
+                setBdLabel(""); setBdError("");
+                const affected = trips.filter((t) => tripOverlapsBlackout(t, [newBd]));
+                if (affected.length > 0) setBdConflicts(affected);
+              }}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium"
+              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
+              <Plus size={12} /> Add
+            </button>
+          </div>
+          {bdError && <p className="text-xs mb-2" style={{ color: "#ef4444" }}>{bdError}</p>}
+
+          {/* List */}
+          {blackoutDates.length === 0 ? (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>No blackout dates defined.</p>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {blackoutDates.map((b) => editBdId === b.id ? (
+                /* ── Inline edit row ── */
+                <div key={b.id} className="flex flex-col gap-2 px-3 py-2 rounded-lg"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--accent)" }}>
+                  <div className="flex flex-wrap gap-2 items-end">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>Label</span>
+                      <input className="text-xs rounded-md px-2 py-1.5 outline-none w-36"
+                        style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                        value={editBdLabel} onChange={(e) => { setEditBdLabel(e.target.value); setEditBdError(""); }} />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>Start</span>
+                      <div className="flex gap-1">
+                        <select className="text-xs rounded-md px-2 py-1.5 outline-none"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+                          value={editBdStartMonth} onChange={(e) => setEditBdStartMonth(Number(e.target.value))}>
+                          {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                        </select>
+                        <input type="number" className="text-xs rounded-md px-2 py-1.5 outline-none w-16 text-center"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                          value={editBdStartYear} onChange={(e) => setEditBdStartYear(Number(e.target.value))} />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>End</span>
+                      <div className="flex gap-1">
+                        <select className="text-xs rounded-md px-2 py-1.5 outline-none"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+                          value={editBdEndMonth} onChange={(e) => setEditBdEndMonth(Number(e.target.value))}>
+                          {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                        </select>
+                        <input type="number" className="text-xs rounded-md px-2 py-1.5 outline-none w-16 text-center"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                          value={editBdEndYear} onChange={(e) => setEditBdEndYear(Number(e.target.value))} />
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={saveEditBd}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium"
+                        style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
+                        <Check size={11} /> Save
+                      </button>
+                      <button onClick={() => setEditBdId(null)}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md"
+                        style={{ background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                        <X size={11} /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                  {editBdError && <p className="text-xs" style={{ color: "#ef4444" }}>{editBdError}</p>}
+                </div>
+              ) : (
+                /* ── Display row ── */
+                <div key={b.id} className="flex items-center justify-between px-3 py-2 rounded-lg"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--border-subtle)" }}>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{b.label}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      {MONTHS[b.startMonth - 1]} {b.startYear} – {MONTHS[b.endMonth - 1]} {b.endYear}
+                    </span>
+                    <button onClick={() => startEditBd(b)} style={{ color: "var(--text-muted)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                      <Pencil size={13} />
+                    </button>
+                    <button onClick={() => removeBlackoutDate(b.id)} style={{ color: "var(--text-muted)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Conflict feedback after add/edit */}
+          {bdConflicts.length > 0 && (
+            <div className="mt-4 rounded-lg p-3 flex flex-col gap-1.5"
+              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)" }}>
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={13} style={{ color: "#ef4444", flexShrink: 0 }} />
+                <span className="text-xs font-semibold" style={{ color: "#ef4444" }}>
+                  {bdConflicts.length} scheduled trip{bdConflicts.length > 1 ? "s" : ""} overlap this blackout period
+                </span>
+                <button onClick={() => setBdConflicts([])} style={{ marginLeft: "auto", color: "var(--text-muted)" }}>
+                  <X size={12} />
+                </button>
+              </div>
+              {bdConflicts.map((t) => (
+                <div key={t.id} className="text-xs pl-5" style={{ color: "var(--text-secondary)" }}>
+                  • {t.title}
+                  {t.scheduled && (
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {" "}({["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][t.scheduled.startMonth]} {t.scheduled.startYear})
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          </div>{/* /p-5 */}
+        </div>{/* /Blackout Dates card */}
+
+        {/* ══════════════════════════════════════════════════════════
+            Section 3 — Display
+            ══════════════════════════════════════════════════════════ */}
+        <div className="rounded-xl mt-8 overflow-hidden"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
+
+          {/* Section header */}
+          <div className="flex items-center gap-3 px-5 py-4"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+            <Monitor size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
+            <div>
+              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
+                Display
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Appearance and navigation preferences.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5 flex flex-col gap-5">
+
+            {/* Home Page */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Home Page</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  View that opens when you click the Wanderlist logo
+                </p>
+              </div>
+              <SegmentedToggle
+                value={defaultView}
+                options={[{ value: "planner", label: "Timeline" }, { value: "trips", label: "Trips" }]}
+                onChange={(v) => setDefaultView(v as "planner" | "trips")}
+              />
+            </div>
+
+            {/* Appearance */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Appearance</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  Persistent color scheme — the nav Moon/Sun button overrides for the current session only
+                </p>
+              </div>
+              <SegmentedToggle
+                value={theme}
+                options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]}
+                onChange={() => toggleTheme()}
+              />
+            </div>
+
+          </div>
+        </div>{/* /Display card */}
 
       </div>
     </main>

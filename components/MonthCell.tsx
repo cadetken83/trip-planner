@@ -29,9 +29,10 @@ type Props = {
   year: number;
   lanes: LaneEntry[];
   isCurrentMonth: boolean;
+  blackoutLabels?: string[];
 };
 
-export default function MonthCell({ month, year, lanes, isCurrentMonth }: Props) {
+export default function MonthCell({ month, year, lanes, isCurrentMonth, blackoutLabels = [] }: Props) {
   const activeDragType = useDragType();
 
   const { setNodeRef, isOver } = useDroppable({
@@ -83,6 +84,14 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth }: Props)
         position: "relative",
       }}
     >
+      {/* Blackout shading overlay */}
+      {blackoutLabels.length > 0 && (
+        <div style={{
+          position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
+          background: "repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(100,100,100,0.08) 4px, rgba(100,100,100,0.08) 8px)",
+        }} />
+      )}
+
       {/* Month label — fixed height, always at top */}
       <span
         style={{
@@ -96,6 +105,19 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth }: Props)
       >
         {MONTH_NAMES[month]}
       </span>
+
+      {/* Blackout label chips */}
+      {blackoutLabels.length > 0 && (
+        <div className="flex flex-wrap gap-0.5 mb-1">
+          {blackoutLabels.map((lbl) => (
+            <span key={lbl} style={{
+              fontSize: "9px", padding: "1px 5px", borderRadius: "999px",
+              background: "rgba(100,100,100,0.25)", color: "var(--text-muted)",
+              whiteSpace: "nowrap", lineHeight: "14px",
+            }}>{lbl}</span>
+          ))}
+        </div>
+      )}
 
       {/* Bars — one per lane, fixed height */}
       <div style={{ display: "flex", flexDirection: "column", gap: `${BAR_GAP}px` }}>

@@ -329,7 +329,7 @@ export default function TripSidebar() {
 
           <div className="flex gap-2 mt-1">
             <button onClick={handleAddTrip} className="flex-1 text-sm py-1.5 rounded-md font-medium"
-              style={{ background: "var(--accent)", color: "#1c1917" }}>Add Trip</button>
+              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>Add Trip</button>
             <button onClick={() => { setShowAddTrip(false); setDupError(""); }}
               className="px-3 text-sm py-1.5 rounded-md font-medium"
               style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>Cancel</button>

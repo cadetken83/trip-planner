@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useTripStore, selectScheduledTrips } from "@/store/useTripStore";
-import { Trip, Group } from "@/types";
+import { useTripStore, selectScheduledTrips, blackoutTouchesMonth } from "@/store/useTripStore";
+import { Trip, Group, BlackoutDate } from "@/types";
 import MonthCell, { LaneEntry } from "@/components/MonthCell";
 import { ChevronDown, ChevronRight, ChevronLeft, CalendarDays, ChevronsUpDown, AlertTriangle } from "lucide-react";
 
@@ -136,7 +136,7 @@ function DensityStrip({ year, trips, groups, compact }: {
 }
 
 // ── Year section ──────────────────────────────────────────────────────────────
-function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, collapsed, onToggle, isOverBudget }: {
+function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, collapsed, onToggle, isOverBudget, blackoutDates }: {
   year: number;
   scheduledTrips: Trip[];
   groups: Group[];
@@ -145,6 +145,7 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
   collapsed: boolean;
   onToggle: () => void;
   isOverBudget: boolean;
+  blackoutDates: BlackoutDate[];
 }) {
   const isPast    = year < currentYear;
   const laneOrder = buildLaneOrder(scheduledTrips, year);
@@ -192,15 +193,21 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
             isolation: "isolate",
           }}
         >
-          {Array.from({ length: 12 }, (_, month) => (
-            <MonthCell
-              key={month}
-              month={month}
-              year={year}
-              lanes={buildCellLanes(laneOrder, groups, month, year)}
-              isCurrentMonth={month === currentMonth && year === currentYear}
-            />
-          ))}
+          {Array.from({ length: 12 }, (_, month) => {
+            const blackoutLabels = blackoutDates
+              .filter((b) => blackoutTouchesMonth(b, month + 1, year))
+              .map((b) => b.label);
+            return (
+              <MonthCell
+                key={month}
+                month={month}
+                year={year}
+                lanes={buildCellLanes(laneOrder, groups, month, year)}
+                isCurrentMonth={month === currentMonth && year === currentYear}
+                blackoutLabels={blackoutLabels}
+              />
+            );
+          })}
         </div>
       )}
     </div>
@@ -218,7 +225,7 @@ function yearBudgetStats(trips: Trip[], year: number) {
 }
 
 export default function CalendarPanel() {
-  const { trips, groups, filters, budget } = useTripStore();
+  const { trips, groups, filters, budget, blackoutDates } = useTripStore();
   const scheduledTrips = selectScheduledTrips(trips, filters);
 
   const now          = new Date();
@@ -325,6 +332,7 @@ export default function CalendarPanel() {
                 collapsed={collapsedYears.has(year)}
                 onToggle={() => toggleYear(year)}
                 isOverBudget={alloc > 0 && total > alloc}
+                blackoutDates={blackoutDates}
               />
             </div>
           );

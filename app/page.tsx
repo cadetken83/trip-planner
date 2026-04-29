@@ -8,19 +8,26 @@ import TripsListPanel from "@/components/TripsListPanel";
 import BudgetPanel from "@/components/BudgetPanel";
 import PastTripPrompt from "@/components/PastTripPrompt";
 import { useTripStore } from "@/store/useTripStore";
-import { CalendarDays, Clock, Download, List, Moon, Sun, Upload, Wallet } from "lucide-react";
+import { CalendarDays, Clock, Download, List, Moon, Settings, Sun, Upload } from "lucide-react";
 import WanderlistIcon from "@/components/WanderlistIcon";
 
 type View = "planner" | "trips" | "history" | "budget";
 
 export default function Home() {
-  const [view, setView] = useState<View>("planner");
-  const { theme, toggleTheme, trips, tripOrder, groups, categories, budget, importData } = useTripStore();
+  const [view, setView] = useState<View>(() => {
+    if (typeof window === "undefined") return "planner";
+    try {
+      const s = JSON.parse(localStorage.getItem("trip-planner-storage") || "{}");
+      return s?.state?.defaultView ?? "planner";
+    } catch { return "planner"; }
+  });
+  const [sessionTheme, setSessionTheme] = useState<"light" | "dark" | null>(null);
+  const { theme, toggleTheme, defaultView, setDefaultView, trips, tripOrder, groups, categories, budget, blackoutDates, importData } = useTripStore();
   const importRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
     const payload = JSON.stringify(
-      { version: 1, exportedAt: new Date().toISOString(), trips, tripOrder, groups, categories, budget },
+      { version: 1, exportedAt: new Date().toISOString(), trips, tripOrder, groups, categories, budget, blackoutDates },
       null, 2
     );
     const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
@@ -52,11 +59,12 @@ export default function Home() {
     reader.readAsText(file);
   };
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+  const effectiveTheme = sessionTheme ?? theme;
+  const isLight = effectiveTheme === "light";
 
-  const isLight = theme === "light";
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
+  }, [effectiveTheme]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: "var(--surface-0)" }}>
@@ -65,7 +73,11 @@ export default function Home() {
         style={{ background: "var(--surface-1)", borderBottom: "1px solid var(--border)" }}
         className="flex items-center justify-between px-6 py-3 shrink-0"
       >
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => setView(defaultView)}
+          className="flex items-center gap-3"
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
           <span style={{ color: "var(--accent)", lineHeight: 0 }}>
             <WanderlistIcon size={22} />
           </span>
@@ -75,7 +87,7 @@ export default function Home() {
           <span style={{ color: "var(--text-muted)" }} className="text-sm hidden sm:block">
             Plan Your Wanderlust!
           </span>
-        </div>
+        </button>
 
         <nav className="flex items-center gap-1">
           <button
@@ -119,8 +131,8 @@ export default function Home() {
               color: view === "budget" ? "var(--accent)" : "var(--text-muted)",
             }}
           >
-            <Wallet size={14} />
-            Budget
+            <Settings size={14} />
+            Settings
           </button>
 
           <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
@@ -154,10 +166,10 @@ export default function Home() {
           <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
 
           <button
-            onClick={toggleTheme}
+            onClick={() => setSessionTheme(effectiveTheme === "light" ? "dark" : "light")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors"
             style={{ color: isLight ? "var(--text-muted)" : "#fbbf24" }}
-            title={isLight ? "Switch to dark mode" : "Switch to light mode"}
+            title={isLight ? "Switch to dark mode (session only)" : "Switch to light mode (session only)"}
           >
             {isLight ? <Moon size={14} /> : <Sun size={14} />}
           </button>

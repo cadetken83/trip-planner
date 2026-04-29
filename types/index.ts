@@ -119,6 +119,17 @@ export const DEFAULT_BUDGET: Budget = {
   annualAllocations: {},
 };
 
+// ─── Blackout Dates ───────────────────────────────────────────────────────────
+
+export type BlackoutDate = {
+  id: string;
+  label: string;
+  startMonth: number;
+  startYear: number;
+  endMonth: number;
+  endYear: number;
+};
+
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 export type Theme = "dark" | "light";
