@@ -324,16 +324,34 @@ export default function TripBar({ trip, group, position }: Props) {
           </div>
         )}
 
-        {/* ── Remove confirm ── */}
-        {showActions && showRemoveConfirm && (
-          <div className="absolute top-1 right-1 flex items-center gap-0.5"
-            style={{ zIndex: 20, fontSize: "9px" }}
+        {/* ── Remove confirm (portal modal) ── */}
+        {showRemoveConfirm && createPortal(
+          <div className="fixed inset-0 flex items-center justify-center z-50"
+            style={{ background: "rgba(0,0,0,0.6)" }}
             onMouseDown={(e) => e.stopPropagation()}>
-            <button onClick={(e) => { e.stopPropagation(); unscheduleTrip(trip.id); }}
-              style={{ background: "#ef4444", color: "#fff", padding: "1px 5px", borderRadius: "3px" }}>Yes</button>
-            <button onClick={(e) => { e.stopPropagation(); setShowRemoveConfirm(false); }}
-              style={{ background: "rgba(0,0,0,0.35)", color: "#fff", padding: "1px 5px", borderRadius: "3px" }}>No</button>
-          </div>
+            <div className="rounded-xl p-5 w-80 flex flex-col gap-4 shadow-2xl"
+              style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderTop: "3px solid #ef4444" }}>
+              <div>
+                <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>Remove booked trip?</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                  "{trip.title}" is booked. Removing it will revert it to unscheduled.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowRemoveConfirm(false)}
+                  className="flex-1 py-2.5 rounded-lg text-sm"
+                  style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>
+                  Cancel
+                </button>
+                <button onClick={() => { unscheduleTrip(trip.id); setShowRemoveConfirm(false); }}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium"
+                  style={{ background: "#ef4444", color: "#fff" }}>
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
 
         {/* ── Right resize grip ── */}

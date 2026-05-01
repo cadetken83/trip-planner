@@ -64,16 +64,24 @@ function buildCellLanes(laneOrder: Trip[], groups: Group[], month: number, year:
 function StatsBar({ trips }: { trips: Trip[] }) {
   if (trips.length === 0) return null;
 
-  const yearMin = trips.reduce((min, t) => Math.min(min, t.scheduled!.startYear), Infinity);
-  const yearMax = trips.reduce((max, t) => Math.max(max, t.scheduled!.endYear), -Infinity);
-  const yearLabel = yearMin === yearMax ? String(yearMin) : `${yearMin} — ${yearMax}`;
+  const yearMin = trips.reduce((min, t) => {
+    const y = t.scheduled?.startYear;
+    return typeof y === "number" && !isNaN(y) ? Math.min(min, y) : min;
+  }, Infinity);
+  const yearMax = trips.reduce((max, t) => {
+    const y = t.scheduled?.endYear;
+    return typeof y === "number" && !isNaN(y) ? Math.max(max, y) : max;
+  }, -Infinity);
+  const yearLabel = yearMin === Infinity ? null
+    : yearMin === yearMax ? String(yearMin)
+    : `${yearMin} — ${yearMax}`;
 
   const totalWeeks = trips.reduce((sum, t) => sum + (t.durationWeeks ?? 0), 0);
   const continentCount = new Set(trips.map((t) => t.continent).filter(Boolean)).size;
 
   const parts: Array<{ num?: number; label: string }> = [
     { num: trips.length, label: trips.length === 1 ? "trip" : "trips" },
-    { label: yearLabel },
+    ...(yearLabel ? [{ label: yearLabel }] : []),
   ];
   if (continentCount > 0)
     parts.push({ num: continentCount, label: continentCount === 1 ? "continent" : "continents" });

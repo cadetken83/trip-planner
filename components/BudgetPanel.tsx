@@ -10,22 +10,22 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const CURRENCIES = [
-  { code: "USD", label: "USD – US Dollar" },
-  { code: "EUR", label: "EUR – Euro" },
-  { code: "GBP", label: "GBP – British Pound" },
-  { code: "CAD", label: "CAD – Canadian Dollar" },
-  { code: "AUD", label: "AUD – Australian Dollar" },
-  { code: "JPY", label: "JPY – Japanese Yen" },
-  { code: "CHF", label: "CHF – Swiss Franc" },
-  { code: "NZD", label: "NZD – New Zealand Dollar" },
-  { code: "SGD", label: "SGD – Singapore Dollar" },
-  { code: "MXN", label: "MXN – Mexican Peso" },
-  { code: "BRL", label: "BRL – Brazilian Real" },
-  { code: "ZAR", label: "ZAR – South African Rand" },
-  { code: "INR", label: "INR – Indian Rupee" },
-  { code: "THB", label: "THB – Thai Baht" },
-  { code: "HKD", label: "HKD – Hong Kong Dollar" },
-  { code: "KRW", label: "KRW – South Korean Won" },
+  { code: "USD", label: "US Dollar" },
+  { code: "EUR", label: "Euro" },
+  { code: "GBP", label: "British Pound" },
+  { code: "CAD", label: "Canadian Dollar" },
+  { code: "AUD", label: "Australian Dollar" },
+  { code: "JPY", label: "Japanese Yen" },
+  { code: "CHF", label: "Swiss Franc" },
+  { code: "NZD", label: "New Zealand Dollar" },
+  { code: "SGD", label: "Singapore Dollar" },
+  { code: "MXN", label: "Mexican Peso" },
+  { code: "BRL", label: "Brazilian Real" },
+  { code: "ZAR", label: "South African Rand" },
+  { code: "INR", label: "Indian Rupee" },
+  { code: "THB", label: "Thai Baht" },
+  { code: "HKD", label: "Hong Kong Dollar" },
+  { code: "KRW", label: "South Korean Won" },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -286,17 +286,6 @@ export default function BudgetPanel() {
           <div className="p-5">
           <div className="flex flex-wrap items-end gap-6">
 
-            {/* Currency */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Currency</label>
-              <select value={currency} onChange={(e) => setBudget({ currency: e.target.value })}
-                style={{ ...inputBase, cursor: "pointer" }}>
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-
             {/* Total budget — click-to-edit with Update button */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
@@ -346,7 +335,20 @@ export default function BudgetPanel() {
                 </div>
               )}
             </div>
+
+            {/* Currency */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Currency</label>
+              <select value={currency} onChange={(e) => setBudget({ currency: e.target.value })}
+                style={{ ...inputBase, cursor: "pointer" }}>
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          <hr className="my-5" style={{ border: "none", borderTop: "1px solid var(--border-subtle)" }} />
 
         {/* ── Overall summary ── */}
         {totalBudget > 0 && (
@@ -518,31 +520,32 @@ export default function BudgetPanel() {
           })}
         </div>
 
-        {/* Show/hide past years */}
-        {hasPastYears && (
+        {/* Add year row + Show/hide past years */}
+        <div className="flex items-center justify-between mb-5 mt-2">
           <button
-            onClick={() => setShowPastYears((v) => !v)}
-            className="text-xs px-2 py-1 mb-2 transition-colors"
-            style={{ color: "var(--text-muted)" }}
+            onClick={() => setMaxFutureYear((y) => y + 1)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+            style={{
+              color: "var(--text-muted)", border: "1px dashed var(--border)",
+              background: "transparent",
+            }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
-            {showPastYears ? "Hide past years" : "Show past years"}
+            <Plus size={12} />
+            Add {maxFutureYear + 1}
           </button>
-        )}
 
-        {/* Add future year */}
-        <button
-          onClick={() => setMaxFutureYear((y) => y + 1)}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors mb-5"
-          style={{
-            color: "var(--text-muted)", border: "1px dashed var(--border)",
-            background: "transparent",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
-          <Plus size={12} />
-          Add {maxFutureYear + 1}
-        </button>
+          {hasPastYears && (
+            <button
+              onClick={() => setShowPastYears((v) => !v)}
+              className="text-xs px-2 py-1 transition-colors"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+              {showPastYears ? "Hide past years" : "Show past years"}
+            </button>
+          )}
+        </div>
 
         {/* ── Over-allocation prompt ── */}
         {pendingAlloc && (

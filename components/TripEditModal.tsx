@@ -17,10 +17,19 @@ const CONTINENTS: Continent[] = [
 ];
 
 const SCHEDULED_STATUSES: { value: TripStatus; label: string }[] = [
-  { value: "planning",  label: "Planning" },
-  { value: "booked",    label: "Booked" },
-  { value: "completed", label: "Done" },
+  { value: "unscheduled", label: "Unscheduled" },
+  { value: "planning",    label: "Planning" },
+  { value: "booked",      label: "Booked" },
+  { value: "completed",   label: "Completed" },
 ];
+
+function isTripInPast(trip: Trip): boolean {
+  if (!trip.scheduled) return false;
+  const now = new Date();
+  const endIdx = trip.scheduled.endYear * 12 + trip.scheduled.endMonth;
+  const nowIdx = now.getFullYear() * 12 + now.getMonth();
+  return endIdx < nowIdx;
+}
 
 type Props = {
   trip: Trip;
@@ -28,7 +37,7 @@ type Props = {
 };
 
 export default function TripEditModal({ trip, onClose }: Props) {
-  const { trips, groups, updateTrip, removeTrip } = useTripStore();
+  const { trips, groups, updateTrip, removeTrip, unscheduleTrip } = useTripStore();
   const categories    = useTripStore((s) => s.categories);
   const currency      = useTripStore((s) => s.budget.currency);
   const blackoutDates = useTripStore((s) => s.blackoutDates);
@@ -151,6 +160,22 @@ export default function TripEditModal({ trip, onClose }: Props) {
       (t) => t.id !== trip.id && t.title.toLowerCase() === title.trim().toLowerCase()
     );
     if (isDup) { setDupError(`A trip named "${title.trim()}" already exists.`); return; }
+
+    // Unscheduling via status dropdown — save other edits and clear schedule
+    if (status === "unscheduled" && isScheduled) {
+      updateTrip(trip.id, {
+        title: title.trim(), destination: destination.trim(),
+        groupId, categoryId: categoryId || undefined,
+        status: "unscheduled", scheduled: undefined, bookBy: undefined,
+        durationWeeks, notes: notes.trim() || undefined,
+        continent: continent || undefined, tags,
+        estimatedCost: estimatedCost !== "" ? Math.max(0, parseFloat(estimatedCost)) || undefined : undefined,
+        imageUrl: imageUrl.trim() || undefined,
+      });
+      onClose();
+      return;
+    }
+
     if (!validateBookBy()) return;
 
     const updates = buildUpdates();
@@ -356,9 +381,11 @@ export default function TripEditModal({ trip, onClose }: Props) {
               ) : (
                 <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
                   value={status} onChange={(e) => setStatus(e.target.value as TripStatus)}>
-                  {SCHEDULED_STATUSES.filter((o) =>
-                    trip.status === "completed" ? o.value === "completed" : true
-                  ).map((o) => (
+                  {SCHEDULED_STATUSES.filter((o) => {
+                    if (trip.status === "completed") return o.value === "completed" || o.value === "unscheduled";
+                    if (isTripInPast(trip)) return o.value !== "planning" && o.value !== "booked";
+                    return true;
+                  }).map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>

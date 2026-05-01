@@ -59,7 +59,7 @@ export default function TripCard({ trip, group, sortHandleProps }: Props) {
           {...listeners}
         >
           {/* Image / colour header */}
-          <div style={{ height: "120px", background: imageBg, flexShrink: 0, position: "relative" }}>
+          <div style={{ height: "85px", background: imageBg, flexShrink: 0, position: "relative" }}>
             {/* Sort + drag handle — top left */}
             <div
               className="absolute top-2 left-2 cursor-grab active:cursor-grabbing rounded p-0.5"

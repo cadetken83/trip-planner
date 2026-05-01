@@ -36,6 +36,11 @@ function addMonths(month: number, year: number, delta: number) {
   return { month: m, year: y };
 }
 
+function isPastMonth(month: number, year: number): boolean {
+  const now = new Date();
+  return year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth());
+}
+
 // ── Confirmation modal ────────────────────────────────────────────────────────
 function ConfirmModal({ title, message, onConfirm, onCancel, confirmLabel = "Confirm", danger = false }: {
   title: string; message: string; onConfirm: () => void; onCancel: () => void;
@@ -100,14 +105,15 @@ function ConflictNotice({ tripTitle, blackoutNames, onDismiss }: {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PendingAction =
-  | { kind: "remove";       tripId: string }
-  | { kind: "move";         tripId: string; month: number; year: number }
-  | { kind: "resize-start"; tripId: string; month: number; year: number }
-  | { kind: "resize-end";   tripId: string; month: number; year: number };
+  | { kind: "remove";          tripId: string }
+  | { kind: "move";            tripId: string; month: number; year: number }
+  | { kind: "resize-start";    tripId: string; month: number; year: number }
+  | { kind: "resize-end";      tripId: string; month: number; year: number }
+  | { kind: "past-schedule";   tripId: string; month: number; year: number };
 
 // ── PlannerView ───────────────────────────────────────────────────────────────
 export default function PlannerView() {
-  const { trips, tripOrder, groups, updateTrip, unscheduleTrip, reorderTrips, scheduleTrip } = useTripStore();
+  const { trips, tripOrder, groups, updateTrip, unscheduleTrip, reorderTrips, scheduleTrip, completeTrip } = useTripStore();
   const blackoutDates = useTripStore((s) => s.blackoutDates);
 
   const [activeDragType,       setActiveDragType]       = useState<DragType>(null);
@@ -144,6 +150,13 @@ export default function PlannerView() {
 
     if (action.kind === "remove") {
       unscheduleTrip(action.tripId);
+
+    } else if (action.kind === "past-schedule") {
+      const span = suggestedMonthSpan(trip.durationWeeks);
+      const end  = addMonths(action.month, action.year, span - 1);
+      newRange = { startMonth: action.month, startYear: action.year, endMonth: end.month, endYear: end.year };
+      scheduleTrip(action.tripId, newRange);
+      completeTrip(action.tripId);
 
     } else if (action.kind === "move") {
       const span = monthSpan(trip);
@@ -245,6 +258,10 @@ export default function PlannerView() {
     const { month, year } = dropData as { month: number; year: number };
 
     if (!dragType || dragType === "new") {
+      if (isPastMonth(month, year) && trip.status !== "completed") {
+        setPendingConfirm({ kind: "past-schedule", tripId, month, year });
+        return;
+      }
       const span = suggestedMonthSpan(trip.durationWeeks);
       const end  = addMonths(month, year, span - 1);
       const range = { startMonth: month, startYear: year, endMonth: end.month, endYear: end.year };
@@ -259,6 +276,10 @@ export default function PlannerView() {
     if (dragType === "move-bar") {
       // Don't act if dropped on same start month
       if (trip.scheduled?.startMonth === month && trip.scheduled?.startYear === year) return;
+      if (isPastMonth(month, year) && trip.status !== "completed") {
+        setPendingConfirm({ kind: "past-schedule", tripId, month, year });
+        return;
+      }
       const action: PendingAction = { kind: "move", tripId, month, year };
       if (trip.status === "booked") setPendingConfirm(action);
       else executeAction(action);
@@ -283,6 +304,11 @@ export default function PlannerView() {
   // ── Confirmation text ────────────────────────────────────────────────────
   const confirmDetails = pendingConfirm ? (() => {
     const t = trips.find((t) => t.id === pendingConfirm.tripId);
+    if (pendingConfirm.kind === "past-schedule") return {
+      title: "Past month",
+      message: `This month has already passed. Mark "${t?.title}" as Completed?`,
+      confirmLabel: "Mark Completed", danger: false,
+    };
     if (pendingConfirm.kind === "remove") return {
       title: "⚠️ Remove booked trip?",
       message: `"${t?.title}" is booked. Removing it will revert it to unscheduled.`,

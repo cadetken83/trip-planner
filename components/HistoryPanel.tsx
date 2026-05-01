@@ -36,6 +36,7 @@ export default function HistoryPanel() {
   const totalWeeks = completed.reduce((s, t) => s + (t.durationWeeks ?? 0), 0);
   const totalSpent = completed.reduce((s, t) => s + (t.estimatedCost ?? 0), 0);
   const hasSpendData = completed.some((t) => t.estimatedCost);
+  const continentCount = new Set(completed.map((t) => t.continent).filter(Boolean)).size;
 
   // Group by year
   const byYear = new Map<number, Trip[]>();
@@ -62,22 +63,10 @@ export default function HistoryPanel() {
     <main className="flex-1 overflow-y-auto px-6 py-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center mb-5">
         <h2 className="font-display text-xl" style={{ color: "var(--text-secondary)" }}>
           Trip History
         </h2>
-        {completed.length > 1 && (
-          <button
-            onClick={() => setSortAsc((v) => !v)}
-            className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
-            style={{
-              borderColor: "var(--border)",
-              color: "var(--text-muted)",
-              background: "var(--surface-2)",
-            }}>
-            {sortAsc ? "Oldest first" : "Newest first"}
-          </button>
-        )}
       </div>
 
       {completed.length === 0 ? (
@@ -90,23 +79,43 @@ export default function HistoryPanel() {
       ) : (
         <>
           {/* Summary stats strip */}
-          <div className="flex flex-wrap gap-6 mb-6 px-4 py-3 rounded-xl"
+          <div className="flex items-center justify-between gap-4 mb-6 px-4 py-3 rounded-xl max-w-2xl"
             style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Trips completed</span>
-              <span className="text-lg font-bold" style={{ color: "var(--accent)" }}>{completed.length}</span>
+            <div className="flex flex-wrap gap-6">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Trips completed</span>
+                <span className="text-lg font-bold" style={{ color: "var(--accent)" }}>{completed.length}</span>
+              </div>
+              {totalWeeks > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Weeks traveled</span>
+                  <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{totalWeeks}</span>
+                </div>
+              )}
+              {continentCount > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Continents</span>
+                  <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{continentCount}</span>
+                </div>
+              )}
+              {hasSpendData && totalSpent > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Total spent</span>
+                  <span className="text-lg font-bold" style={{ color: "#6366f1" }}>{fmt(totalSpent)}</span>
+                </div>
+              )}
             </div>
-            {totalWeeks > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Weeks traveled</span>
-                <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{totalWeeks}</span>
-              </div>
-            )}
-            {hasSpendData && totalSpent > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Total spent</span>
-                <span className="text-lg font-bold" style={{ color: "#6366f1" }}>{fmt(totalSpent)}</span>
-              </div>
+            {completed.length > 1 && (
+              <button
+                onClick={() => setSortAsc((v) => !v)}
+                className="shrink-0 text-xs px-3 py-1.5 rounded-lg border transition-colors"
+                style={{
+                  borderColor: "var(--border)",
+                  color: "var(--text-muted)",
+                  background: "var(--surface-3)",
+                }}>
+                {sortAsc ? "Oldest first" : "Newest first"}
+              </button>
             )}
           </div>
 
@@ -144,16 +153,16 @@ export default function HistoryPanel() {
                         {/* Image thumbnail */}
                         {trip.imageUrl ? (
                           <div style={{
-                            width: "48px", height: "48px", borderRadius: "8px",
+                            width: "72px", height: "72px", borderRadius: "8px",
                             background: `url(${trip.imageUrl}) center/cover no-repeat`,
                             flexShrink: 0,
                           }} />
                         ) : (
                           <div style={{
-                            width: "48px", height: "48px", borderRadius: "8px",
+                            width: "72px", height: "72px", borderRadius: "8px",
                             background: `${groupColor}22`, flexShrink: 0,
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: "18px",
+                            fontSize: "22px",
                           }}>
                             {category?.icon ?? "✈️"}
                           </div>
