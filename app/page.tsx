@@ -7,6 +7,7 @@ import HistoryPanel from "@/components/HistoryPanel";
 import TripsListPanel from "@/components/TripsListPanel";
 import BudgetPanel from "@/components/BudgetPanel";
 import PastTripPrompt from "@/components/PastTripPrompt";
+import OnboardingModal from "@/components/OnboardingModal";
 import { useTripStore } from "@/store/useTripStore";
 import { CalendarDays, Clock, Download, List, Moon, Settings, Sun, Upload } from "lucide-react";
 import WanderlistIcon from "@/components/WanderlistIcon";
@@ -22,7 +23,8 @@ export default function Home() {
     } catch { return "planner"; }
   });
   const [sessionTheme, setSessionTheme] = useState<"light" | "dark" | null>(null);
-  const { theme, toggleTheme, defaultView, setDefaultView, trips, tripOrder, groups, categories, budget, blackoutDates, importData } = useTripStore();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { theme, toggleTheme, defaultView, setDefaultView, trips, tripOrder, groups, categories, budget, blackoutDates, importData, hasSeenOnboarding } = useTripStore();
   const importRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -173,6 +175,17 @@ export default function Home() {
           >
             {isLight ? <Moon size={14} /> : <Sun size={14} />}
           </button>
+
+          <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
+
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            title="Open help tour"
+          >
+            <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1 }}>?</span>
+          </button>
         </nav>
       </header>
 
@@ -184,6 +197,11 @@ export default function Home() {
        : <HistoryPanel />}
 
       <PastTripPrompt />
+
+      <OnboardingModal
+        isOpen={showOnboarding || !hasSeenOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
     </div>
   );
 }

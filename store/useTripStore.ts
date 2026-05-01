@@ -83,6 +83,9 @@ type TripStore = {
   setBudget: (updates: Partial<Omit<Budget, "annualAllocations">>) => void;
   setAnnualAllocation: (year: number, amount: number) => void;
 
+  hasSeenOnboarding: boolean;
+  setHasSeenOnboarding: (value: boolean) => void;
+
   blackoutDates: BlackoutDate[];
   addBlackoutDate: (b: BlackoutDate) => void;
   updateBlackoutDate: (id: string, updates: Partial<Omit<BlackoutDate, "id">>) => void;
@@ -116,6 +119,7 @@ export const useTripStore = create<TripStore>()(
       categories: DEFAULT_CATEGORIES,
       budget: DEFAULT_BUDGET,
       blackoutDates: [],
+      hasSeenOnboarding: false,
       theme: "light",
       defaultView: "planner",
       filters: {
@@ -269,6 +273,8 @@ export const useTripStore = create<TripStore>()(
       removeBlackoutDate: (id) =>
         set((s) => ({ blackoutDates: s.blackoutDates.filter((b) => b.id !== id) })),
 
+      setHasSeenOnboarding: (value) => set({ hasSeenOnboarding: value }),
+
       importData: (data) =>
         set({
           trips: data.trips,
@@ -310,6 +316,7 @@ export const useTripStore = create<TripStore>()(
           theme: persisted?.theme ?? "light",
           defaultView: persisted?.defaultView ?? "planner",
           blackoutDates: persisted?.blackoutDates ?? [],
+          hasSeenOnboarding: persisted?.hasSeenOnboarding ?? false,
           groups: (persisted?.groups ?? current.groups).map((g: any) => ({
             isDefault: false, ...g,
           })),
