@@ -52,7 +52,7 @@ function formatDateRange(trip: Trip): string {
 function isBookByOverdue(trip: Trip): boolean {
   if (!trip.bookBy || trip.status === "booked" || trip.status === "completed") return false;
   const now = new Date();
-  const limit = new Date(trip.bookBy.year, trip.bookBy.month - 1, trip.bookBy.day ?? 1);
+  const limit = new Date(trip.bookBy.year, trip.bookBy.month, trip.bookBy.day ?? 1);
   return limit < now;
 }
 

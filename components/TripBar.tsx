@@ -25,7 +25,7 @@ const BLEED = 14;
 function isBookByOverdue(trip: Trip): boolean {
   if (!trip.bookBy || trip.status === "booked" || trip.status === "completed") return false;
   const now = new Date();
-  const limit = new Date(trip.bookBy.year, trip.bookBy.month - 1, trip.bookBy.day ?? 1);
+  const limit = new Date(trip.bookBy.year, trip.bookBy.month, trip.bookBy.day ?? 1);
   return limit < now;
 }
 
@@ -240,11 +240,31 @@ export default function TripBar({ trip, group, position }: Props) {
           </div>
         )}
 
+        {/* ── Book-by overdue indicator ── */}
+        {overdue && isStart && (
+          <div style={{
+            position: "absolute",
+            left: hasBlackoutConflict ? "22px" : "6px",
+            top: "50%", transform: "translateY(-50%)",
+            zIndex: 20, pointerEvents: "none",
+          }}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: "18px", height: "18px", borderRadius: "50%",
+              background: "#f59e0b", boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+            }}>
+              <AlertTriangle size={11} style={{ color: "#fff" }} />
+            </div>
+          </div>
+        )}
+
         {/* ── Content (start / single only) ── */}
         {isStart && (
           <div style={{
             position: "absolute",
-            left: hasBlackoutConflict ? "22px" : "12px",
+            left: hasBlackoutConflict && overdue ? "42px"
+                : hasBlackoutConflict || overdue ? "28px"
+                : "12px",
             right: "10px",
             top: "50%", transform: "translateY(-50%)",
             display: "flex", flexDirection: "column", gap: "3px",
@@ -266,7 +286,6 @@ export default function TripBar({ trip, group, position }: Props) {
               >
                 {trip.title}
               </span>
-              {overdue && <AlertTriangle size={10} style={{ color: "#f59e0b", flexShrink: 0 }} />}
             </div>
 
             {/* Metadata row: duration · category · group */}

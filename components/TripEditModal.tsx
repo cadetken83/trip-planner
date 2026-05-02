@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTripStore } from "@/store/useTripStore";
 import { inferContinent } from "@/utils/inferContinent";
 import { Trip, TripStatus, Continent } from "@/types";
-import { X, Trash2, Ban } from "lucide-react";
+import { AlertTriangle, X, Trash2, Ban } from "lucide-react";
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
@@ -537,6 +537,19 @@ export default function TripEditModal({ trip, onClose }: Props) {
                       value={bookByDay} onChange={(e) => setBookByDay(e.target.value)} />
                   </div>
                   {bookByError && <p className="text-xs" style={{ color: "#ef4444" }}>{bookByError}</p>}
+                  {(() => {
+                    if (trip.status === "booked" || trip.status === "completed") return null;
+                    const limit = new Date(bookByYear, bookByMonth, bookByDay ? Number(bookByDay) : 1);
+                    if (limit >= new Date()) return null;
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle size={12} style={{ color: "#f59e0b", flexShrink: 0 }} />
+                        <p className="text-xs" style={{ color: "#f59e0b" }}>
+                          Book By date has passed — book this trip or remove the date.
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
