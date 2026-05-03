@@ -96,7 +96,6 @@ export type FilterState = {
   continents: Continent[];
   statuses: TripStatus[];
   categoryIds: string[];
-  showCompleted: boolean;
   searchQuery: string;
 };
 

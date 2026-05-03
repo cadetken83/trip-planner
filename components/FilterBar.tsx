@@ -18,7 +18,7 @@ export default function FilterBar() {
   const {
     groups, categories, filters,
     setGroupFilter, setContinentFilter, setStatusFilter,
-    setCategoryFilter, toggleShowCompleted, setSearchQuery, clearFilters,
+    setCategoryFilter, setSearchQuery, clearFilters,
   } = useTripStore();
 
   const hasActiveFilters =
@@ -26,8 +26,7 @@ export default function FilterBar() {
     filters.groupIds.length > 0 ||
     filters.continents.length > 0 ||
     filters.statuses.length > 0 ||
-    filters.categoryIds.length > 0 ||
-    filters.showCompleted;
+    filters.categoryIds.length > 0;
 
   const toggle = <T extends string>(
     current: T[], value: T, setter: (next: T[]) => void
@@ -117,19 +116,6 @@ export default function FilterBar() {
             label, value
           ))}
         </div>
-
-        <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
-
-        <button onClick={toggleShowCompleted}
-          className="px-2.5 py-1 rounded-full border transition-all shrink-0 text-xs"
-          style={{
-            borderColor: filters.showCompleted ? "var(--accent)" : "var(--border)",
-            background:  filters.showCompleted ? "var(--accent-dim)" : "transparent",
-            color:       filters.showCompleted ? "var(--accent)" : "var(--text-secondary)",
-            fontWeight:  filters.showCompleted ? 600 : 400,
-          }}>
-          Show Completed
-        </button>
 
         {/* Clear Filters — always visible, dims but never invisible */}
         <button

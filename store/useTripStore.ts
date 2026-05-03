@@ -72,7 +72,6 @@ type TripStore = {
   setContinentFilter: (continents: FilterState["continents"]) => void;
   setStatusFilter: (statuses: FilterState["statuses"]) => void;
   setCategoryFilter: (categoryIds: string[]) => void;
-  toggleShowCompleted: () => void;
   setSearchQuery: (q: string) => void;
   clearFilters: () => void;
 
@@ -124,7 +123,7 @@ export const useTripStore = create<TripStore>()(
       defaultView: "planner",
       filters: {
         groupIds: [], continents: [], statuses: [],
-        categoryIds: [], showCompleted: false, searchQuery: "",
+        categoryIds: [], searchQuery: "",
       },
 
       addTrip: (trip) =>
@@ -231,11 +230,6 @@ export const useTripStore = create<TripStore>()(
       setCategoryFilter: (categoryIds) =>
         set((s) => ({ filters: { ...s.filters, categoryIds } })),
 
-      toggleShowCompleted: () =>
-        set((s) => ({
-          filters: { ...s.filters, showCompleted: !s.filters.showCompleted },
-        })),
-
       setSearchQuery: (searchQuery) =>
         set((s) => ({ filters: { ...s.filters, searchQuery } })),
 
@@ -243,7 +237,7 @@ export const useTripStore = create<TripStore>()(
         set({
           filters: {
             groupIds: [], continents: [], statuses: [],
-            categoryIds: [], showCompleted: false, searchQuery: "",
+            categoryIds: [], searchQuery: "",
           },
         }),
 
@@ -285,7 +279,7 @@ export const useTripStore = create<TripStore>()(
           blackoutDates: data.blackoutDates ?? [],
           filters: {
             groupIds: [], continents: [], statuses: [],
-            categoryIds: [], showCompleted: false, searchQuery: "",
+            categoryIds: [], searchQuery: "",
           },
         }),
     }),
@@ -309,7 +303,7 @@ export const useTripStore = create<TripStore>()(
           tripOrder: persisted?.tripOrder ?? trips.map((t: Trip) => t.id),
           filters: {
             groupIds: [], continents: [], statuses: [],
-            categoryIds: [], showCompleted: false, searchQuery: "",
+            categoryIds: [], searchQuery: "",
             ...(persisted?.filters ?? {}),
           },
           categories: persisted?.categories ?? current.categories,
@@ -360,7 +354,7 @@ export const selectScheduledTrips = (trips: Trip[], filters: FilterState) =>
   trips.filter((t) => {
     if (!t.scheduled) return false;
     if (t.status === "unscheduled") return false;
-    if (t.status === "completed" && !filters.showCompleted) return false;
+    if (t.status === "completed") return false;
     if (!matchesSearch(t, filters.searchQuery)) return false;
     if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
     if (filters.continents.length && (!t.continent || !filters.continents.includes(t.continent))) return false;
@@ -368,6 +362,17 @@ export const selectScheduledTrips = (trips: Trip[], filters: FilterState) =>
     if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
     return true;
   });
+
+export function selectHistoryTrips(trips: Trip[], filters: FilterState): Trip[] {
+  return trips.filter((t) => {
+    if (t.status !== "completed") return false;
+    if (!matchesSearch(t, filters.searchQuery)) return false;
+    if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
+    if (filters.continents.length && (!t.continent || !filters.continents.includes(t.continent))) return false;
+    if (filters.categoryIds.length && (!t.categoryId || !filters.categoryIds.includes(t.categoryId))) return false;
+    return true;
+  });
+}
 
 // ─── Blackout helpers ─────────────────────────────────────────────────────────
 

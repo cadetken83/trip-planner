@@ -349,14 +349,16 @@ export default function TripBar({ trip, group, position }: Props) {
                 style={{ background: `${color}bb`, color: "#fff" }}
                 title="Mark as booked"><Check size={10} /></button>
             )}
-            <button onClick={(e) => {
-                e.stopPropagation();
-                if (isBooked) setShowRemoveConfirm(true);
-                else unscheduleTrip(trip.id);
-              }}
-              className="w-5 h-5 rounded-full flex items-center justify-center"
-              style={{ background: "#ef444477", color: "#fff" }}
-              title="Remove from calendar"><X size={9} /></button>
+            {trip.status !== "completed" && (
+              <button onClick={(e) => {
+                  e.stopPropagation();
+                  if (isBooked) setShowRemoveConfirm(true);
+                  else unscheduleTrip(trip.id);
+                }}
+                className="w-5 h-5 rounded-full flex items-center justify-center"
+                style={{ background: "#ef444477", color: "#fff" }}
+                title="Remove from calendar"><X size={9} /></button>
+            )}
           </div>
         )}
 

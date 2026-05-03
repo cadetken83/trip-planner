@@ -1,227 +1,170 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
+import {
+  DndContext, DragEndEvent, DragStartEvent,
+  MouseSensor, TouchSensor, useSensor, useSensors,
+} from "@dnd-kit/core";
 import { useTripStore } from "@/store/useTripStore";
-import TripEditModal from "@/components/TripEditModal";
+import { Ban } from "lucide-react";
 import { Trip } from "@/types";
+import TripSidebar from "@/components/TripSidebar";
+import CalendarPanel from "@/components/CalendarPanel";
+import { DragContext, DragType } from "@/contexts/DragContext";
 
-const MONTH_NAMES = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec",
-];
+function monthSpan(trip: Trip): number {
+  if (!trip.scheduled) return 1;
+  const { startMonth, startYear, endMonth, endYear } = trip.scheduled;
+  return (endYear - startYear) * 12 + (endMonth - startMonth);
+}
+
+function addMonths(month: number, year: number, delta: number) {
+  const total = month + delta;
+  const m = ((total % 12) + 12) % 12;
+  const y = year + Math.floor(total / 12);
+  return { month: m, year: y };
+}
+
+function ConflictNotice({ tripTitle, blackoutNames, onDismiss }: {
+  tripTitle: string; blackoutNames: string[]; onDismiss: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ background: "rgba(0,0,0,0.6)" }}>
+      <div className="rounded-xl p-5 w-80 flex flex-col gap-4 shadow-2xl"
+        style={{
+          background: "var(--surface-2)", border: "1px solid var(--border)",
+          borderTop: "3px solid #ef4444",
+        }}>
+        <div className="flex items-start gap-3">
+          <Ban size={16} style={{ color: "#ef4444", flexShrink: 0, marginTop: "2px" }} />
+          <div>
+            <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>Scheduling Conflict</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              <strong>"{tripTitle}"</strong> overlaps {blackoutNames.length === 1 ? "the" : ""} blackout period{blackoutNames.length > 1 ? "s" : ""}:{" "}
+              <strong>{blackoutNames.join(", ")}</strong>.
+            </p>
+          </div>
+        </div>
+        <button onClick={onDismiss}
+          className="w-full py-2 rounded-lg text-sm font-medium"
+          style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function HistoryPanel() {
-  const { trips, groups, categories, filters, budget } = useTripStore();
-  const currency = budget.currency;
-  const [sortAsc, setSortAsc] = useState(false);
-  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const { trips, updateTrip } = useTripStore();
+  const blackoutDates = useTripStore((s) => s.blackoutDates);
 
-  const completed = trips
-    .filter((t) => {
-      if (t.status !== "completed") return false;
-      if (filters.groupIds.length && !filters.groupIds.includes(t.groupId)) return false;
-      if (filters.continents.length && (!t.continent || !filters.continents.includes(t.continent))) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (!a.scheduled) return 1;
-      if (!b.scheduled) return -1;
-      const aIdx = a.scheduled.endYear * 12 + a.scheduled.endMonth;
-      const bIdx = b.scheduled.endYear * 12 + b.scheduled.endMonth;
-      return sortAsc ? aIdx - bIdx : bIdx - aIdx;
+  const [activeDragType, setActiveDragType] = useState<DragType>(null);
+  const [blackoutConflictAlert, setBlackoutConflictAlert] = useState<{ tripTitle: string; blackoutNames: string[] } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
+
+  const conflictsForRange = (range: { startMonth: number; startYear: number; endMonth: number; endYear: number }) => {
+    const ts = range.startYear * 12 + range.startMonth + 1;
+    const te = range.endYear   * 12 + range.endMonth   + 1;
+    return blackoutDates.filter((b) => {
+      const bs = b.startYear * 12 + b.startMonth;
+      const be = b.endYear   * 12 + b.endMonth;
+      return ts <= be && te >= bs;
     });
+  };
 
-  // Summary stats
-  const totalWeeks = completed.reduce((s, t) => s + (t.durationWeeks ?? 0), 0);
-  const totalSpent = completed.reduce((s, t) => s + (t.estimatedCost ?? 0), 0);
-  const hasSpendData = completed.some((t) => t.estimatedCost);
-  const continentCount = new Set(completed.map((t) => t.continent).filter(Boolean)).size;
-
-  // Group by year
-  const byYear = new Map<number, Trip[]>();
-  for (const trip of completed) {
-    const year = trip.scheduled?.endYear ?? trip.scheduled?.startYear ?? 0;
-    if (!byYear.has(year)) byYear.set(year, []);
-    byYear.get(year)!.push(trip);
+  function handleDragStart(event: DragStartEvent) {
+    const data = event.active.data.current as any;
+    const t = data?.type as string | undefined;
+    if      (t === "move-bar")     setActiveDragType("move-bar");
+    else if (t === "resize-start") setActiveDragType("resize-start");
+    else if (t === "resize-end")   setActiveDragType("resize-end");
+    else                           setActiveDragType(null);
   }
-  const sortedYears = [...byYear.keys()].sort((a, b) => sortAsc ? a - b : b - a);
 
-  const editingTrip = editingTripId ? trips.find((t) => t.id === editingTripId) : null;
+  function handleDragEnd(event: DragEndEvent) {
+    const { over, active } = event;
+    const dragData = active.data.current as any;
+    setActiveDragType(null);
 
-  function fmt(amount: number) {
-    try {
-      return new Intl.NumberFormat(undefined, {
-        style: "currency", currency, maximumFractionDigits: 0,
-      }).format(amount);
-    } catch {
-      return `${currency} ${amount.toLocaleString()}`;
+    if (!over) return;
+
+    const tripId   = dragData?.tripId as string;
+    const dragType = dragData?.type   as string | undefined;
+    const trip     = trips.find((t) => t.id === tripId);
+    if (!trip) return;
+
+    const dropData = over.data.current as any;
+    if (!dropData) return;
+
+    // Block dropping completed trips onto the unscheduled sidebar
+    if (dropData.isSidebar) return;
+
+    const { month, year } = dropData as { month: number; year: number };
+
+    if (dragType === "move-bar") {
+      if (trip.scheduled?.startMonth === month && trip.scheduled?.startYear === year) return;
+      const span = monthSpan(trip);
+      const end  = addMonths(month, year, span);
+      const newRange = { startMonth: month, startYear: year, endMonth: end.month, endYear: end.year };
+      updateTrip(tripId, { scheduled: newRange });
+      const conflicts = conflictsForRange(newRange);
+      if (conflicts.length > 0) {
+        setBlackoutConflictAlert({ tripTitle: trip.title, blackoutNames: conflicts.map((b) => b.label) });
+      }
+      return;
+    }
+
+    if (dragType === "resize-start") {
+      if (!trip.scheduled) return;
+      const newStartIdx = year * 12 + month;
+      const endIdx      = trip.scheduled.endYear * 12 + trip.scheduled.endMonth;
+      if (newStartIdx > endIdx) return;
+      const newRange = { ...trip.scheduled, startMonth: month, startYear: year };
+      updateTrip(tripId, { scheduled: newRange });
+      const conflicts = conflictsForRange(newRange);
+      if (conflicts.length > 0) {
+        setBlackoutConflictAlert({ tripTitle: trip.title, blackoutNames: conflicts.map((b) => b.label) });
+      }
+      return;
+    }
+
+    if (dragType === "resize-end") {
+      if (!trip.scheduled) return;
+      const startIdx  = trip.scheduled.startYear * 12 + trip.scheduled.startMonth;
+      const newEndIdx = year * 12 + month;
+      if (newEndIdx < startIdx) return;
+      const newRange = { ...trip.scheduled, endMonth: month, endYear: year };
+      updateTrip(tripId, { scheduled: newRange });
+      const conflicts = conflictsForRange(newRange);
+      if (conflicts.length > 0) {
+        setBlackoutConflictAlert({ tripTitle: trip.title, blackoutNames: conflicts.map((b) => b.label) });
+      }
+      return;
     }
   }
 
   return (
-    <main className="flex-1 overflow-y-auto px-6 py-6">
-
-      {/* Header */}
-      <div className="flex items-center mb-5">
-        <h2 className="font-display text-xl" style={{ color: "var(--text-secondary)" }}>
-          Trip History
-        </h2>
-      </div>
-
-      {completed.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
-          <span className="text-4xl">🗺️</span>
-          <p style={{ color: "var(--text-muted)" }} className="text-sm">
-            No completed trips yet. Mark a trip as complete from the calendar.
-          </p>
+    <DragContext.Provider value={activeDragType}>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex flex-1 overflow-hidden">
+          <TripSidebar />
+          <CalendarPanel mode="history" />
         </div>
-      ) : (
-        <>
-          {/* Summary stats strip */}
-          <div className="flex items-center justify-between gap-4 mb-6 px-4 py-3 rounded-xl max-w-2xl"
-            style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-            <div className="flex flex-wrap gap-6">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Trips completed</span>
-                <span className="text-lg font-bold" style={{ color: "var(--accent)" }}>{completed.length}</span>
-              </div>
-              {totalWeeks > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Weeks traveled</span>
-                  <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{totalWeeks}</span>
-                </div>
-              )}
-              {continentCount > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Continents</span>
-                  <span className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{continentCount}</span>
-                </div>
-              )}
-              {hasSpendData && totalSpent > 0 && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Total spent</span>
-                  <span className="text-lg font-bold" style={{ color: "#6366f1" }}>{fmt(totalSpent)}</span>
-                </div>
-              )}
-            </div>
-            {completed.length > 1 && (
-              <button
-                onClick={() => setSortAsc((v) => !v)}
-                className="shrink-0 text-xs px-3 py-1.5 rounded-lg border transition-colors"
-                style={{
-                  borderColor: "var(--border)",
-                  color: "var(--text-muted)",
-                  background: "var(--surface-3)",
-                }}>
-                {sortAsc ? "Oldest first" : "Newest first"}
-              </button>
-            )}
-          </div>
 
-          {/* Year groups */}
-          <div className="flex flex-col gap-6 max-w-2xl">
-            {sortedYears.map((year) => (
-              <div key={year}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="font-display text-base" style={{ color: "var(--text-secondary)" }}>{year}</span>
-                  <div className="flex-1 h-px" style={{ background: "var(--border-subtle)" }} />
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    {byYear.get(year)!.length} trip{byYear.get(year)!.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {byYear.get(year)!.map((trip) => {
-                    const group = groups.find((g) => g.id === trip.groupId);
-                    const category = categories.find((c) => c.id === trip.categoryId);
-                    const groupColor = group?.color ?? "#78716c";
-
-                    return (
-                      <button
-                        key={trip.id}
-                        onClick={() => setEditingTripId(trip.id)}
-                        className="flex items-center gap-3 rounded-xl w-full text-left transition-colors"
-                        style={{
-                          background: "var(--surface-1)",
-                          border: "1px solid var(--border-subtle)",
-                          borderLeft: `3px solid ${groupColor}`,
-                          padding: "12px 16px",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-1)")}>
-
-                        {/* Image thumbnail */}
-                        {trip.imageUrl ? (
-                          <div style={{
-                            width: "72px", height: "72px", borderRadius: "8px",
-                            background: `url(${trip.imageUrl}) center/cover no-repeat`,
-                            flexShrink: 0,
-                          }} />
-                        ) : (
-                          <div style={{
-                            width: "72px", height: "72px", borderRadius: "8px",
-                            background: `${groupColor}22`, flexShrink: 0,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: "22px",
-                          }}>
-                            {category?.icon ?? "✈️"}
-                          </div>
-                        )}
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
-                            {trip.title}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                            {trip.destination && (
-                              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                {trip.destination}
-                              </span>
-                            )}
-                            {category && (
-                              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                · {category.icon} {category.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Right side: date range + group pill + duration */}
-                        <div className="text-right shrink-0">
-                          {trip.scheduled && (
-                            <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
-                              {MONTH_NAMES[trip.scheduled.startMonth]} {trip.scheduled.startYear}
-                              {" – "}
-                              {MONTH_NAMES[trip.scheduled.endMonth]} {trip.scheduled.endYear}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-xs px-2 py-0.5 rounded-full"
-                              style={{ background: `${groupColor}22`, color: groupColor }}>
-                              {group?.name}
-                            </span>
-                            {trip.durationWeeks && (
-                              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                                {trip.durationWeeks}w
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {editingTrip && createPortal(
-        <TripEditModal trip={editingTrip} onClose={() => setEditingTripId(null)} />,
-        document.body
-      )}
-    </main>
+        {blackoutConflictAlert && (
+          <ConflictNotice
+            tripTitle={blackoutConflictAlert.tripTitle}
+            blackoutNames={blackoutConflictAlert.blackoutNames}
+            onDismiss={() => setBlackoutConflictAlert(null)}
+          />
+        )}
+      </DndContext>
+    </DragContext.Provider>
   );
 }

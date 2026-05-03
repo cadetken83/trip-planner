@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useTripStore, selectScheduledTrips, blackoutTouchesMonth } from "@/store/useTripStore";
+import { useTripStore, selectScheduledTrips, selectHistoryTrips, blackoutTouchesMonth } from "@/store/useTripStore";
 import { Trip, Group, BlackoutDate } from "@/types";
 import MonthCell, { LaneEntry } from "@/components/MonthCell";
 import { ChevronDown, ChevronRight, ChevronLeft, CalendarDays, ChevronsUpDown, AlertTriangle } from "lucide-react";
@@ -61,7 +61,7 @@ function buildCellLanes(laneOrder: Trip[], groups: Group[], month: number, year:
 }
 
 // ── Stats bar ─────────────────────────────────────────────────────────────────
-function StatsBar({ trips }: { trips: Trip[] }) {
+function StatsBar({ trips, mode, currency }: { trips: Trip[]; mode: "planning" | "history"; currency?: string }) {
   if (trips.length === 0) return null;
 
   const yearMin = trips.reduce((min, t) => {
@@ -78,6 +78,18 @@ function StatsBar({ trips }: { trips: Trip[] }) {
 
   const totalWeeks = trips.reduce((sum, t) => sum + (t.durationWeeks ?? 0), 0);
   const continentCount = new Set(trips.map((t) => t.continent).filter(Boolean)).size;
+  const totalCost = trips.reduce((sum, t) => sum + (t.estimatedCost ?? 0), 0);
+
+  function fmtCost(amount: number): string {
+    if (currency && currency !== "USD") {
+      try {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency", currency, maximumFractionDigits: 0,
+        }).format(amount);
+      } catch { /* fallback */ }
+    }
+    return `$${amount.toLocaleString()}`;
+  }
 
   const parts: Array<{ num?: number; label: string }> = [
     { num: trips.length, label: trips.length === 1 ? "trip" : "trips" },
@@ -87,6 +99,8 @@ function StatsBar({ trips }: { trips: Trip[] }) {
     parts.push({ num: continentCount, label: continentCount === 1 ? "continent" : "continents" });
   if (totalWeeks > 0)
     parts.push({ num: totalWeeks, label: totalWeeks === 1 ? "week" : "weeks" });
+  if (totalCost > 0)
+    parts.push({ label: `${fmtCost(totalCost)} ${mode === "history" ? "spent" : "est."}` });
 
   return (
     <div
@@ -141,7 +155,7 @@ function DensityStrip({ year, trips, groups, compact }: {
 }
 
 // ── Year section ──────────────────────────────────────────────────────────────
-function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, collapsed, onToggle, isOverBudget, blackoutDates }: {
+function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, collapsed, onToggle, isOverBudget, blackoutDates, mode }: {
   year: number;
   scheduledTrips: Trip[];
   groups: Group[];
@@ -151,6 +165,7 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
   onToggle: () => void;
   isOverBudget: boolean;
   blackoutDates: BlackoutDate[];
+  mode: "planning" | "history";
 }) {
   const isPast    = year < currentYear;
   const laneOrder = buildLaneOrder(scheduledTrips, year);
@@ -170,7 +185,7 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
                : "var(--text-primary)",
         }}>
           {year}
-          {isPast && <span className="ml-2 text-xs font-sans" style={{ color: "var(--text-muted)" }}>history</span>}
+          {isPast && mode === "planning" && <span className="ml-2 text-xs font-sans" style={{ color: "var(--text-muted)" }}>history</span>}
         </span>
         {isOverBudget && (
           <span className="flex items-center gap-1 ml-1 text-xs font-medium" style={{ color: "#ef4444" }}>
@@ -229,15 +244,17 @@ function yearBudgetStats(trips: Trip[], year: number) {
   return spent + committed;
 }
 
-export default function CalendarPanel() {
+export default function CalendarPanel({ mode = "planning" }: { mode?: "planning" | "history" }) {
   const { trips, groups, filters, budget, blackoutDates } = useTripStore();
-  const scheduledTrips = selectScheduledTrips(trips, filters);
+  const scheduledTrips = mode === "history"
+    ? selectHistoryTrips(trips, filters)
+    : selectScheduledTrips(trips, filters);
 
   const now          = new Date();
   const currentMonth = now.getMonth();
   const currentYear  = now.getFullYear();
 
-  const [windowStart,    setWindowStart]    = useState(currentYear);
+  const [windowStart,    setWindowStart]    = useState(mode === "history" ? currentYear - 4 : currentYear);
   const [collapsedYears, setCollapsedYears] = useState<Set<number>>(new Set());
   const years    = Array.from({ length: 5 }, (_, i) => windowStart + i);
   const todayRef = useRef<HTMLDivElement>(null);
@@ -267,11 +284,11 @@ export default function CalendarPanel() {
       <div className="flex items-center justify-between mb-5" style={{ minWidth: "700px" }}>
         <div className="flex items-center gap-3">
           <h2 className="font-display text-xl" style={{ color: "var(--text-secondary)" }}>
-            5-Year Outlook
+            {mode === "history" ? "Trip History" : "5-Year Outlook"}
           </h2>
           <span className="text-xs px-2 py-1 rounded-md"
             style={{ background: "var(--surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border-subtle)" }}>
-            {windowStart} – {windowStart + 4}
+            {mode === "history" ? `${windowStart} – ${windowStart + 4}` : `${windowStart} – ${windowStart + 4}`}
           </span>
         </div>
 
@@ -280,36 +297,48 @@ export default function CalendarPanel() {
             <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>
               Your Travel Summary
             </span>
-            <StatsBar trips={scheduledTrips} />
+            <StatsBar trips={scheduledTrips} mode={mode} currency={budget.currency} />
           </div>
         )}
 
         <div className="flex items-center gap-1">
           <button onClick={() => setWindowStart((p) => p - 1)}
+            disabled={mode === "planning" && windowStart <= currentYear}
             className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors"
-            style={{ color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-3)")}
+            style={{
+              color: "var(--text-secondary)",
+              opacity: (mode === "planning" && windowStart <= currentYear) ? 0.3 : 1,
+              cursor: (mode === "planning" && windowStart <= currentYear) ? "default" : "pointer",
+            }}
+            onMouseEnter={(e) => { if (!(mode === "planning" && windowStart <= currentYear)) e.currentTarget.style.background = "var(--surface-3)"; }}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
             <ChevronLeft size={13} />
             {windowStart - 1}
           </button>
 
-          <button onClick={scrollToToday}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors"
-            style={{
-              color: isAtDefault ? "var(--text-secondary)" : "var(--accent)",
-              border: `1px solid ${isAtDefault ? "var(--border)" : "var(--accent-dim)"}`,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-3)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-            <CalendarDays size={12} />
-            Today
-          </button>
+          {mode === "planning" && (
+            <button onClick={scrollToToday}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors"
+              style={{
+                color: isAtDefault ? "var(--text-secondary)" : "var(--accent)",
+                border: `1px solid ${isAtDefault ? "var(--border)" : "var(--accent-dim)"}`,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-3)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <CalendarDays size={12} />
+              Today
+            </button>
+          )}
 
           <button onClick={() => setWindowStart((p) => p + 1)}
+            disabled={mode === "history" && windowStart >= currentYear - 4}
             className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-colors"
-            style={{ color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-3)")}
+            style={{
+              color: "var(--text-secondary)",
+              opacity: (mode === "history" && windowStart >= currentYear - 4) ? 0.3 : 1,
+              cursor: (mode === "history" && windowStart >= currentYear - 4) ? "default" : "pointer",
+            }}
+            onMouseEnter={(e) => { if (!(mode === "history" && windowStart >= currentYear - 4)) e.currentTarget.style.background = "var(--surface-3)"; }}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
             {windowStart + 5}
             <ChevronRight size={13} />
@@ -345,6 +374,7 @@ export default function CalendarPanel() {
                 onToggle={() => toggleYear(year)}
                 isOverBudget={alloc > 0 && total > alloc}
                 blackoutDates={blackoutDates}
+                mode={mode}
               />
             </div>
           );
