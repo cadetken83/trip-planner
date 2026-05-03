@@ -17,7 +17,7 @@ export type LaneEntry = {
 } | null;
 
 // Bar height + gap between bars
-const BAR_H  = 52;
+const BAR_H  = 72;
 const BAR_GAP = 6;
 // Label height at top of cell
 const LABEL_H = 20;
@@ -79,6 +79,7 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
         gap: 0,
         overflow: "visible",  // allow bar bleed across gap
         position: "relative",
+        zIndex: hasAnyTrip ? 2 : 1,
       }}
     >
       {/* Blackout shading overlay */}
@@ -104,6 +105,22 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
         }}>
           {MONTH_NAMES[month]}
         </span>
+        {/* Colored pip for each trip present this month — brighter at start */}
+        {lanes
+          .filter((l) => l !== null)
+          .map((l, i) => {
+            const isEntry = l!.position === "start" || l!.position === "single";
+            return (
+              <div key={i} style={{
+                width: isEntry ? "6px" : "5px",
+                height: isEntry ? "6px" : "5px",
+                borderRadius: "50%",
+                background: l!.group?.color ?? "#78716c",
+                opacity: isEntry ? 1 : 0.45,
+                flexShrink: 0,
+              }} />
+            );
+          })}
       </div>
 
       {/* Blackout label chips */}
