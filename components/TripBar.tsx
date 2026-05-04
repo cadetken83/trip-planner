@@ -15,14 +15,14 @@ type Props = {
   trip: Trip;
   group: Group | undefined;
   position: BarPosition;
+  hasLeftNeighbor?: boolean;
+  hasRightNeighbor?: boolean;
 };
 
 export const BAR_HEIGHT = 72;
 
 // Distance each bar must bleed to bridge the inter-cell gap
-const BLEED = 14;
-// Extra expansion on the "open" edge of start/end bars and both edges of single bars
-// gives all cards a minimum visual width of ~2 months and centers them on their month(s)
+const BLEED  = 14;
 const EXPAND = 44;
 
 function isBookByOverdue(trip: Trip): boolean {
@@ -32,7 +32,7 @@ function isBookByOverdue(trip: Trip): boolean {
   return limit < now;
 }
 
-export default function TripBar({ trip, group, position }: Props) {
+export default function TripBar({ trip, group, position, hasLeftNeighbor = false, hasRightNeighbor = false }: Props) {
   const { unscheduleTrip, bookTrip, unbookTrip, categories } = useTripStore();
   const blackoutDates = useTripStore((s) => s.blackoutDates);
   const [hovered,              setHovered]              = useState(false);
@@ -50,8 +50,9 @@ export default function TripBar({ trip, group, position }: Props) {
     hideTimerRef.current = setTimeout(() => setShowBlackoutPopover(false), 120);
   }
 
-  const color    = group?.color ?? "#78716c";
-  const isBooked = trip.status === "booked";
+  const color      = group?.color ?? "#78716c";
+  const isBooked   = trip.status === "booked";
+  const isFullColor = isBooked || trip.status === "completed";
   const isStart  = position === "start" || position === "single";
   const isEnd    = position === "end"   || position === "single";
 
@@ -105,26 +106,25 @@ export default function TripBar({ trip, group, position }: Props) {
     start: "6px 0 0 6px", middle: "0", end: "0 6px 6px 0", single: "6px",
   }[position];
 
-  // Single bars bleed both sides; start also expands left; end also expands right
-  const marginLeft  = position === "single" ? `-${EXPAND}px`
-                    : position === "start"  ? `-${EXPAND}px`
-                    : `-${BLEED}px`;
-  const marginRight = position === "single" ? `-${EXPAND}px`
-                    : position === "end"    ? `-${EXPAND}px`
-                    : `-${BLEED}px`;
-
-  // Background: image on all positions when available, colour wash as fallback
+  // Background: image only on start/single anchor segment; middle/end use colour wash
   const hasImage = !!trip.imageUrl;
+
+  // Expand into adjacent cells only when no same-lane neighbor would cause overlap;
+  // image start bars always use BLEED left so the image doesn't bleed into the prior month.
+  const expandLeft  = !hasImage && (position === "single" ? !hasLeftNeighbor : position === "start" && !hasLeftNeighbor);
+  const expandRight = position === "single" && !hasRightNeighbor;
+  const marginLeft  = expandLeft  ? `-${EXPAND}px` : `-${BLEED}px`;
+  const marginRight = expandRight ? `-${EXPAND}px` : `-${BLEED}px`;
   let barBg: string;
-  if (hasImage) {
+  if (hasImage && isStart) {
     barBg = `linear-gradient(rgba(0,0,0,0.28), rgba(0,0,0,0.28)), url(${trip.imageUrl}) center/cover no-repeat`;
   } else if (isStart) {
-    barBg = isBooked ? color : `${color}66`;
+    barBg = isFullColor ? color : `${color}66`;
   } else {
-    barBg = isBooked ? `${color}50` : `${color}28`;
+    barBg = isFullColor ? `${color}50` : `${color}28`;
   }
 
-  const textOnBar = hasImage || isBooked;
+  const textOnBar = (hasImage && isStart) || isFullColor;
   const textColor = textOnBar ? "#fff" : color;
   const metaColor = textOnBar ? "rgba(255,255,255,0.82)" : `${color}bb`;
 
@@ -133,7 +133,7 @@ export default function TripBar({ trip, group, position }: Props) {
     : overdue && isStart
       ? `2px solid #f59e0b`
       : isStart
-        ? isBooked ? `2px solid ${color}` : `1.5px dashed ${color}88`
+        ? isFullColor ? `2px solid ${color}` : `1.5px dashed ${color}88`
         : `1px solid ${color}44`;
 
   // Grip chevron color: white on dark bars, group color on light bars

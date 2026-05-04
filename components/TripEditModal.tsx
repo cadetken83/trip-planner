@@ -320,7 +320,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
             <label className="text-xs" style={{ color: "var(--text-muted)" }}>Trip Type</label>
             <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={selectStyle(categoryId)}
               value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Select type</option>
+              <option value="">None</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
               ))}
@@ -352,6 +352,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
               <label className="text-xs" style={{ color: "var(--text-muted)" }}>Travel Group</label>
               <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
                 value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+                <option value="">None</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}{g.isDefault ? " ★" : ""}</option>
                 ))}

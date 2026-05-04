@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
-import { Trip, BlackoutDate } from "@/types";
-import { AlertTriangle, Ban, Check, Monitor, Pencil, Plus, Trash2, Wallet, X } from "lucide-react";
+import { Trip, BlackoutDate, TripCategory, Group } from "@/types";
+import { AlertTriangle, Ban, Check, Monitor, Pencil, Plus, Star, Tag, Trash2, Users, Wallet, X } from "lucide-react";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -133,7 +133,7 @@ function SegmentedToggle({ value, options, onChange }: {
 type PendingAllocation = { year: number; amount: number; newTotalAllocated: number };
 
 export default function BudgetPanel() {
-  const { trips, budget, setBudget, setAnnualAllocation, blackoutDates, addBlackoutDate, updateBlackoutDate, removeBlackoutDate, theme, toggleTheme, defaultView, setDefaultView } = useTripStore();
+  const { trips, budget, setBudget, setAnnualAllocation, blackoutDates, addBlackoutDate, updateBlackoutDate, removeBlackoutDate, groups, addGroup, updateGroup, removeGroup, setDefaultGroup, categories, addCategory, updateCategory, removeCategory, theme, toggleTheme, defaultView, setDefaultView } = useTripStore();
   const { currency, totalBudget, annualAllocations } = budget;
 
   const now = new Date();
@@ -166,6 +166,53 @@ export default function BudgetPanel() {
   const [editBdEndMonth,   setEditBdEndMonth]   = useState(1);
   const [editBdEndYear,    setEditBdEndYear]    = useState(currentYear);
   const [editBdError,      setEditBdError]      = useState("");
+
+  // Group inline editing
+  const [editGroupId,    setEditGroupId]    = useState<string | null>(null);
+  const [editGroupName,  setEditGroupName]  = useState("");
+  const [editGroupColor, setEditGroupColor] = useState("#3B82F6");
+  const [groupError,     setGroupError]     = useState("");
+  const [newGroupName,   setNewGroupName]   = useState("");
+  const [newGroupColor,  setNewGroupColor]  = useState("#3B82F6");
+  const [newGroupError,  setNewGroupError]  = useState("");
+  const [deleteGroupId,  setDeleteGroupId]  = useState<string | null>(null);
+
+  function startEditGroup(g: Group) {
+    setEditGroupId(g.id);
+    setEditGroupName(g.name);
+    setEditGroupColor(g.color);
+    setGroupError("");
+  }
+
+  function saveEditGroup() {
+    if (!editGroupName.trim()) { setGroupError("Name required"); return; }
+    const isDup = groups.some((g) => g.id !== editGroupId && g.name.toLowerCase() === editGroupName.trim().toLowerCase());
+    if (isDup) { setGroupError("A group with that name already exists."); return; }
+    updateGroup(editGroupId!, { name: editGroupName.trim(), color: editGroupColor });
+    setEditGroupId(null);
+  }
+
+  // Category (trip type) inline editing
+  const [editCatId,   setEditCatId]   = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatIcon, setEditCatIcon] = useState("");
+  const [catError,    setCatError]    = useState("");
+  const [newCatName,  setNewCatName]  = useState("");
+  const [newCatIcon,  setNewCatIcon]  = useState("");
+  const [newCatError, setNewCatError] = useState("");
+
+  function startEditCat(c: TripCategory) {
+    setEditCatId(c.id);
+    setEditCatName(c.name);
+    setEditCatIcon(c.icon);
+    setCatError("");
+  }
+
+  function saveEditCat() {
+    if (!editCatName.trim()) { setCatError("Name required"); return; }
+    updateCategory(editCatId!, { name: editCatName.trim(), icon: editCatIcon.trim() || "✈️" });
+    setEditCatId(null);
+  }
 
   function startEditBd(b: BlackoutDate) {
     setEditBdId(b.id);
@@ -804,7 +851,263 @@ export default function BudgetPanel() {
         </div>{/* /Blackout Dates card */}
 
         {/* ══════════════════════════════════════════════════════════
-            Section 3 — Display
+            Section 3 — Travel Groups
+            ══════════════════════════════════════════════════════════ */}
+        <div className="rounded-xl mt-8 overflow-hidden"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
+
+          <div className="flex items-center gap-3 px-5 py-4"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+            <Users size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
+            <div>
+              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>Travel Groups</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Organize trips by who you're travelling with. The ★ group is the default for new trips.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5">
+
+          {/* List */}
+          <div className="flex flex-col gap-1 mb-4">
+            {groups.map((g) => editGroupId === g.id ? (
+              <div key={g.id} className="flex items-center gap-2 px-3 py-2 rounded-lg flex-wrap"
+                style={{ background: "var(--surface-3)", border: "1px solid var(--accent)" }}>
+                <input type="color" value={editGroupColor}
+                  onChange={(e) => setEditGroupColor(e.target.value)}
+                  className="w-7 h-7 rounded cursor-pointer shrink-0" title="Color" />
+                <input
+                  className="text-sm rounded-md px-2 py-1 outline-none flex-1 min-w-[120px]"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                  value={editGroupName}
+                  onChange={(e) => { setEditGroupName(e.target.value); setGroupError(""); }}
+                  placeholder="Group name"
+                />
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={saveEditGroup}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium"
+                    style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
+                    <Check size={11} /> Save
+                  </button>
+                  <button onClick={() => setEditGroupId(null)}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md"
+                    style={{ background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                    <X size={11} /> Cancel
+                  </button>
+                </div>
+                {groupError && <p className="w-full text-xs" style={{ color: "#ef4444" }}>{groupError}</p>}
+              </div>
+            ) : deleteGroupId === g.id ? (
+              <div key={g.id} className="flex items-center gap-2 px-3 py-2 rounded-lg flex-wrap"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                <span className="text-xs flex-1" style={{ color: "#ef4444" }}>
+                  "{g.name}" has {trips.filter((t) => t.groupId === g.id).length} trip(s). Delete?
+                </span>
+                <button onClick={() => { removeGroup(g.id); setDeleteGroupId(null); }}
+                  className="text-xs px-2.5 py-1 rounded-md font-medium"
+                  style={{ background: "#ef4444", color: "#fff" }}>Delete</button>
+                <button onClick={() => setDeleteGroupId(null)}
+                  className="text-xs px-2.5 py-1 rounded-md"
+                  style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}>Cancel</button>
+              </div>
+            ) : (
+              <div key={g.id} className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                style={{ background: "var(--surface-3)", border: "1px solid var(--border-subtle)" }}>
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: g.color }} />
+                <span className="text-sm font-medium flex-1" style={{ color: "var(--text-primary)" }}>
+                  {g.name}
+                  {g.isDefault && <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--accent)" }}>default</span>}
+                </span>
+                <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>
+                  {trips.filter((t) => t.groupId === g.id).length} trip{trips.filter((t) => t.groupId === g.id).length !== 1 ? "s" : ""}
+                </span>
+                <button onClick={() => setDefaultGroup(g.id)}
+                  style={{ color: g.isDefault ? "var(--accent)" : "var(--text-muted)" }}
+                  title={g.isDefault ? "Default group" : "Set as default"}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = g.isDefault ? "var(--accent)" : "var(--text-muted)")}>
+                  <Star size={13} fill={g.isDefault ? "currentColor" : "none"} />
+                </button>
+                <button onClick={() => startEditGroup(g)} style={{ color: "var(--text-muted)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                  <Pencil size={13} />
+                </button>
+                <button onClick={() => {
+                    if (g.isDefault) { alert("Set another group as default before deleting."); return; }
+                    const hasTrips = trips.some((t) => t.groupId === g.id);
+                    if (hasTrips) { setDeleteGroupId(g.id); return; }
+                    removeGroup(g.id);
+                  }} style={{ color: "var(--text-muted)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Add new group */}
+          <div className="flex flex-wrap gap-2 items-end">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Color</span>
+              <input type="color" value={newGroupColor}
+                onChange={(e) => setNewGroupColor(e.target.value)}
+                className="w-9 h-9 rounded cursor-pointer" title="Pick color" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Name</span>
+              <input
+                className="text-xs rounded-md px-2 py-1.5 outline-none w-40"
+                style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                placeholder="e.g. Work"
+                value={newGroupName}
+                onChange={(e) => { setNewGroupName(e.target.value); setNewGroupError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("add-group-btn")?.click(); }}
+              />
+            </div>
+            <button
+              id="add-group-btn"
+              onClick={() => {
+                if (!newGroupName.trim()) { setNewGroupError("Name required"); return; }
+                const isDup = groups.some((g) => g.name.toLowerCase() === newGroupName.trim().toLowerCase());
+                if (isDup) { setNewGroupError("Already exists."); return; }
+                addGroup({ id: crypto.randomUUID(), name: newGroupName.trim(), color: newGroupColor });
+                setNewGroupName(""); setNewGroupError("");
+              }}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium"
+              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
+              <Plus size={12} /> Add
+            </button>
+          </div>
+          {newGroupError && <p className="text-xs mt-1" style={{ color: "#ef4444" }}>{newGroupError}</p>}
+
+          </div>{/* /p-5 */}
+        </div>{/* /Travel Groups card */}
+
+        {/* ══════════════════════════════════════════════════════════
+            Section 4 — Trip Types
+            ══════════════════════════════════════════════════════════ */}
+        <div className="rounded-xl mt-8 overflow-hidden"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
+
+          {/* Section header */}
+          <div className="flex items-center gap-3 px-5 py-4"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+            <Tag size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
+            <div>
+              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
+                Trip Types
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                Customize the types used to classify your trips.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-5">
+
+          {/* List */}
+          {categories.length === 0 ? (
+            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>No trip types defined.</p>
+          ) : (
+            <div className="flex flex-col gap-1 mb-4">
+              {categories.map((c) => editCatId === c.id ? (
+                <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg flex-wrap"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--accent)" }}>
+                  <input
+                    className="text-sm rounded-md px-2 py-1 outline-none w-14 text-center"
+                    style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                    value={editCatIcon}
+                    onChange={(e) => setEditCatIcon(e.target.value)}
+                    placeholder="🏖️"
+                    maxLength={4}
+                  />
+                  <input
+                    className="text-sm rounded-md px-2 py-1 outline-none flex-1 min-w-[120px]"
+                    style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                    value={editCatName}
+                    onChange={(e) => { setEditCatName(e.target.value); setCatError(""); }}
+                    placeholder="Type name"
+                  />
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={saveEditCat}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium"
+                      style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
+                      <Check size={11} /> Save
+                    </button>
+                    <button onClick={() => setEditCatId(null)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md"
+                      style={{ background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                      <X size={11} /> Cancel
+                    </button>
+                  </div>
+                  {catError && <p className="w-full text-xs" style={{ color: "#ef4444" }}>{catError}</p>}
+                </div>
+              ) : (
+                <div key={c.id} className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--border-subtle)" }}>
+                  <span className="text-base shrink-0 w-6 text-center">{c.icon}</span>
+                  <span className="text-sm font-medium flex-1" style={{ color: "var(--text-primary)" }}>{c.name}</span>
+                  <button onClick={() => startEditCat(c)} style={{ color: "var(--text-muted)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                    <Pencil size={13} />
+                  </button>
+                  <button onClick={() => removeCategory(c.id)} style={{ color: "var(--text-muted)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new type */}
+          <div className="flex flex-wrap gap-2 items-end">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Icon</span>
+              <input
+                className="text-sm rounded-md px-2 py-1.5 outline-none w-14 text-center"
+                style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                placeholder="🏖️"
+                value={newCatIcon}
+                onChange={(e) => { setNewCatIcon(e.target.value); setNewCatError(""); }}
+                maxLength={4}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Name</span>
+              <input
+                className="text-xs rounded-md px-2 py-1.5 outline-none w-40"
+                style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                placeholder="e.g. Wellness"
+                value={newCatName}
+                onChange={(e) => { setNewCatName(e.target.value); setNewCatError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("add-cat-btn")?.click(); }}
+              />
+            </div>
+            <button
+              id="add-cat-btn"
+              onClick={() => {
+                if (!newCatName.trim()) { setNewCatError("Name required"); return; }
+                addCategory({ id: crypto.randomUUID(), name: newCatName.trim(), icon: newCatIcon.trim() || "✈️" });
+                setNewCatName(""); setNewCatIcon(""); setNewCatError("");
+              }}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium"
+              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
+              <Plus size={12} /> Add
+            </button>
+          </div>
+          {newCatError && <p className="text-xs mt-1" style={{ color: "#ef4444" }}>{newCatError}</p>}
+
+          </div>{/* /p-5 */}
+        </div>{/* /Trip Types card */}
+
+        {/* ══════════════════════════════════════════════════════════
+            Section 5 — Display
             ══════════════════════════════════════════════════════════ */}
         <div className="rounded-xl mt-8 overflow-hidden"
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>

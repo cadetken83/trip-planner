@@ -419,6 +419,7 @@ export default function TripsListPanel() {
             <div className="flex gap-2 flex-wrap">
               <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={inputStyle}
                 value={newGroupId} onChange={(e) => setNewGroupId(e.target.value)}>
+                <option value="">None</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}{g.isDefault ? " ★" : ""}</option>)}
               </select>
               <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={selectStyle(newCategoryId)}

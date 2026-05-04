@@ -35,29 +35,56 @@ function tripTouchesMonth(trip: Trip, month: number, year: number): boolean {
   return idx >= startIdx && idx <= endIdx;
 }
 
-function buildLaneOrder(trips: Trip[], year: number): Trip[] {
-  return trips
+type LaneAssignment = { trip: Trip; lane: number };
+
+// Greedy interval scheduling: assigns each trip the lowest free lane so trips
+// that end early free their lane for later trips, eliminating visual gaps.
+function computeLaneAssignments(trips: Trip[], year: number): { assignments: LaneAssignment[]; totalLanes: number } {
+  const relevant = trips
     .filter((t) => t.scheduled && t.scheduled.startYear <= year && t.scheduled.endYear >= year)
     .sort((a, b) => {
       const ai = a.scheduled!.startYear * 12 + a.scheduled!.startMonth;
       const bi = b.scheduled!.startYear * 12 + b.scheduled!.startMonth;
       return ai - bi;
     });
+
+  const laneEndTimes: number[] = [];
+  const assignments: LaneAssignment[] = [];
+
+  for (const trip of relevant) {
+    const startIdx = trip.scheduled!.startYear * 12 + trip.scheduled!.startMonth;
+    const endIdx   = trip.scheduled!.endYear   * 12 + trip.scheduled!.endMonth;
+    let lane = laneEndTimes.findIndex((freeAt) => freeAt <= startIdx);
+    if (lane === -1) {
+      lane = laneEndTimes.length;
+      laneEndTimes.push(endIdx + 1);
+    } else {
+      laneEndTimes[lane] = endIdx + 1;
+    }
+    assignments.push({ trip, lane });
+  }
+
+  return { assignments, totalLanes: laneEndTimes.length };
 }
 
-function buildCellLanes(laneOrder: Trip[], groups: Group[], month: number, year: number): LaneEntry[] {
-  return laneOrder.map((trip) => {
-    if (!tripTouchesMonth(trip, month, year)) return null;
-    return {
-      trip,
-      group: groups.find((g) => g.id === trip.groupId),
-      position: getPosition(
-        month, year,
-        trip.scheduled!.startMonth, trip.scheduled!.startYear,
-        trip.scheduled!.endMonth,   trip.scheduled!.endYear
-      ),
-    };
-  });
+function buildCellLanes(assignments: LaneAssignment[], totalLanes: number, groups: Group[], month: number, year: number): LaneEntry[] {
+  const result: LaneEntry[] = Array(totalLanes).fill(null);
+  for (const { trip, lane } of assignments) {
+    if (tripTouchesMonth(trip, month, year)) {
+      const hasLeftNeighbor  = month > 0  && assignments.some((a) => a.lane === lane && a.trip.id !== trip.id && tripTouchesMonth(a.trip, month - 1, year));
+      const hasRightNeighbor = month < 11 && assignments.some((a) => a.lane === lane && a.trip.id !== trip.id && tripTouchesMonth(a.trip, month + 1, year));
+      result[lane] = {
+        trip,
+        group: groups.find((g) => g.id === trip.groupId),
+        position: getPosition(month, year,
+          trip.scheduled!.startMonth, trip.scheduled!.startYear,
+          trip.scheduled!.endMonth,   trip.scheduled!.endYear),
+        hasLeftNeighbor,
+        hasRightNeighbor,
+      };
+    }
+  }
+  return result;
 }
 
 // ── Stats bar ─────────────────────────────────────────────────────────────────
@@ -167,9 +194,9 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
   blackoutDates: BlackoutDate[];
   mode: "planning" | "history";
 }) {
-  const isPast    = year < currentYear;
-  const laneOrder = buildLaneOrder(scheduledTrips, year);
-  const tripCount = laneOrder.length;
+  const isPast = year < currentYear;
+  const { assignments, totalLanes } = computeLaneAssignments(scheduledTrips, year);
+  const tripCount = assignments.length;
 
   return (
     <div className="mb-6">
@@ -208,23 +235,28 @@ function YearSection({ year, scheduledTrips, groups, currentMonth, currentYear, 
           className="grid gap-2 mt-2"
           style={{
             gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
-            opacity: isPast ? 0.75 : 1,
+            opacity: isPast && mode !== "history" ? 0.75 : 1,
             // Make cells overflow-visible so bar bleed works across gaps
             isolation: "isolate",
           }}
         >
           {Array.from({ length: 12 }, (_, month) => {
-            const blackoutLabels = blackoutDates
-              .filter((b) => blackoutTouchesMonth(b, month + 1, year))
+            const blackoutsInMonth = blackoutDates.filter((b) => blackoutTouchesMonth(b, month + 1, year));
+            const isBlackedOut = blackoutsInMonth.length > 0;
+            // Only show label chip on the first cell of each blackout's range
+            const blackoutLabels = blackoutsInMonth
+              .filter((b) => b.startYear === year ? b.startMonth === month + 1 : month === 0)
               .map((b) => b.label);
             return (
               <MonthCell
                 key={month}
                 month={month}
                 year={year}
-                lanes={buildCellLanes(laneOrder, groups, month, year)}
+                lanes={buildCellLanes(assignments, totalLanes, groups, month, year)}
                 isCurrentMonth={month === currentMonth && year === currentYear}
                 blackoutLabels={blackoutLabels}
+                isBlackedOut={isBlackedOut}
+                mode={mode}
               />
             );
           })}

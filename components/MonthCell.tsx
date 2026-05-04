@@ -14,6 +14,8 @@ export type LaneEntry = {
   trip: Trip;
   group: Group | undefined;
   position: BarPosition;
+  hasLeftNeighbor: boolean;
+  hasRightNeighbor: boolean;
 } | null;
 
 // Bar height + gap between bars
@@ -30,9 +32,11 @@ type Props = {
   lanes: LaneEntry[];
   isCurrentMonth: boolean;
   blackoutLabels?: string[];
+  isBlackedOut?: boolean;
+  mode?: "planning" | "history";
 };
 
-export default function MonthCell({ month, year, lanes, isCurrentMonth, blackoutLabels = [] }: Props) {
+export default function MonthCell({ month, year, lanes, isCurrentMonth, blackoutLabels = [], isBlackedOut = false, mode }: Props) {
   const activeDragType = useDragType();
 
   const { setNodeRef, isOver } = useDroppable({
@@ -71,7 +75,7 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
       style={{
         background: bgColor,
         border: `1px ${isOver ? "dashed" : "solid"} ${borderColor}`,
-        opacity: isPast ? 0.65 : 1,
+        opacity: isPast && mode !== "history" ? 0.65 : 1,
         height: `${cellHeight}px`,
         padding: `${CELL_PAD}px ${CELL_PAD}px`,
         display: "flex",
@@ -83,15 +87,15 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
       }}
     >
       {/* Blackout shading overlay */}
-      {blackoutLabels.length > 0 && (
+      {isBlackedOut && (
         <div style={{
           position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
-          background: "repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(100,100,100,0.08) 4px, rgba(100,100,100,0.08) 8px)",
+          background: "repeating-linear-gradient(-45deg, transparent, transparent 4px, var(--blackout-stripe) 4px, var(--blackout-stripe) 8px)",
         }} />
       )}
 
-      {/* Month label — fixed height, always at top */}
-      <div style={{ height: `${LABEL_H}px`, display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+      {/* Month label — fixed height; blackout chips inline so they add no extra vertical space */}
+      <div style={{ height: `${LABEL_H}px`, display: "flex", alignItems: "center", gap: "4px", flexShrink: 0, overflow: "hidden" }}>
         {isCurrentMonth && (
           <div style={{
             width: "4px", height: "4px", borderRadius: "50%",
@@ -102,6 +106,7 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
           fontSize: "11px",
           fontWeight: 500,
           color: isCurrentMonth ? "var(--accent)" : "var(--text-muted)",
+          flexShrink: 0,
         }}>
           {MONTH_NAMES[month]}
         </span>
@@ -121,20 +126,16 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
               }} />
             );
           })}
+        {/* Blackout chips inline — no extra row, no layout shift */}
+        {blackoutLabels.map((lbl) => (
+          <span key={lbl} style={{
+            fontSize: "9px", padding: "1px 5px", borderRadius: "999px",
+            background: "rgba(239,68,68,0.12)", color: "var(--text-secondary)",
+            border: "1px solid rgba(239,68,68,0.25)",
+            whiteSpace: "nowrap", lineHeight: "14px", flexShrink: 0,
+          }}>{lbl}</span>
+        ))}
       </div>
-
-      {/* Blackout label chips */}
-      {blackoutLabels.length > 0 && (
-        <div className="flex flex-wrap gap-0.5 mb-1">
-          {blackoutLabels.map((lbl) => (
-            <span key={lbl} style={{
-              fontSize: "9px", padding: "1px 5px", borderRadius: "999px",
-              background: "rgba(100,100,100,0.25)", color: "var(--text-muted)",
-              whiteSpace: "nowrap", lineHeight: "14px",
-            }}>{lbl}</span>
-          ))}
-        </div>
-      )}
 
       {/* Bars — one per lane, fixed height */}
       <div style={{ display: "flex", flexDirection: "column", gap: `${BAR_GAP}px` }}>
@@ -147,6 +148,8 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
               trip={lane.trip}
               group={lane.group}
               position={lane.position}
+              hasLeftNeighbor={lane.hasLeftNeighbor}
+              hasRightNeighbor={lane.hasRightNeighbor}
             />
           )
         )}
