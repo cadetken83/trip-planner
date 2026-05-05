@@ -39,8 +39,11 @@ export default function TripBar({ trip, group, position, hasLeftNeighbor = false
   const [showEdit,             setShowEdit]             = useState(false);
   const [showRemoveConfirm,    setShowRemoveConfirm]    = useState(false);
   const [showBlackoutPopover,  setShowBlackoutPopover]  = useState(false);
-  const conflictBtnRef = useRef<HTMLButtonElement>(null);
-  const hideTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showOverduePopover,   setShowOverduePopover]   = useState(false);
+  const conflictBtnRef  = useRef<HTMLButtonElement>(null);
+  const overdueBtnRef   = useRef<HTMLButtonElement>(null);
+  const hideTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideOverdueRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function openBlackoutPopover() {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -48,6 +51,13 @@ export default function TripBar({ trip, group, position, hasLeftNeighbor = false
   }
   function closeBlackoutPopover() {
     hideTimerRef.current = setTimeout(() => setShowBlackoutPopover(false), 120);
+  }
+  function openOverduePopover() {
+    if (hideOverdueRef.current) clearTimeout(hideOverdueRef.current);
+    setShowOverduePopover(true);
+  }
+  function closeOverduePopover() {
+    hideOverdueRef.current = setTimeout(() => setShowOverduePopover(false), 120);
   }
 
   const color      = group?.color ?? "#78716c";
@@ -260,14 +270,54 @@ export default function TripBar({ trip, group, position, hasLeftNeighbor = false
               </>
             )}
             {overdue && (
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                width: "18px", height: "18px", borderRadius: "50%",
-                background: "#f59e0b", boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-                pointerEvents: "none",
-              }}>
-                <AlertTriangle size={11} style={{ color: "#fff" }} />
-              </div>
+              <>
+                <button
+                  ref={overdueBtnRef}
+                  onMouseEnter={openOverduePopover}
+                  onMouseLeave={closeOverduePopover}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setShowOverduePopover((v) => !v); }}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: "18px", height: "18px", borderRadius: "50%",
+                    background: "#f59e0b", boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                    border: "none", cursor: "pointer", padding: 0,
+                  }}>
+                  <AlertTriangle size={11} style={{ color: "#fff" }} />
+                </button>
+                {showOverduePopover && createPortal(
+                  <div
+                    onMouseEnter={openOverduePopover}
+                    onMouseLeave={closeOverduePopover}
+                    style={{
+                      position: "fixed",
+                      top: (overdueBtnRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+                      left: (overdueBtnRef.current?.getBoundingClientRect().left ?? 0),
+                      zIndex: 9999,
+                      background: "var(--surface-1)",
+                      border: "1px solid #f59e0b",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      minWidth: "180px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                    }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                      <AlertTriangle size={13} style={{ color: "#f59e0b", flexShrink: 0 }} />
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#f59e0b" }}>Book By Overdue</span>
+                    </div>
+                    <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0 }}>
+                      Deadline was{" "}
+                      <strong style={{ color: "var(--text-primary)" }}>
+                        {trip.bookBy
+                          ? new Date(trip.bookBy.year, trip.bookBy.month, trip.bookBy.day ?? 1)
+                              .toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+                          : "unknown"}
+                      </strong>
+                    </p>
+                  </div>,
+                  document.body
+                )}
+              </>
             )}
           </div>
         )}

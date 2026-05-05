@@ -107,14 +107,6 @@ function TripCard({ trip }: { trip: Trip }) {
             flexShrink: 0,
           }}
         >
-          {/* Status badge — top left */}
-          <span
-            className="absolute text-xs font-semibold px-2.5 py-1 rounded-full"
-            style={{ top: "10px", left: "10px", background: badge.bg, color: badge.text, letterSpacing: "0.02em" }}
-          >
-            {sm.label}
-          </span>
-
           {/* Book-by overdue badge — top right */}
           {overdue && (
             <span
@@ -541,8 +533,8 @@ export default function TripsListPanel() {
               return (
                 <section key={status}>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wide"
-                      style={{ color: sm.color, letterSpacing: "0.07em" }}>
+                    <span className="text-sm font-bold uppercase tracking-wide"
+                      style={{ color: "var(--text-primary)", letterSpacing: "0.07em" }}>
                       {STATUS_SECTION_LABELS[status]}
                     </span>
                     <span className="text-xs px-1.5 py-0.5 rounded-full"

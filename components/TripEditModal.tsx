@@ -559,9 +559,21 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {/* Image URL */}
           <div className="flex flex-col gap-1">
             <label className="text-xs" style={{ color: "var(--text-muted)" }}>Image URL</label>
-            <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
-              value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..." />
+            <div className="relative">
+              <input className="w-full text-sm rounded-md px-3 py-2 pr-8 outline-none" style={inputStyle}
+                value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://..." />
+              {imageUrl && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded"
+                  style={{ color: "var(--text-muted)" }}
+                  onClick={() => setImageUrl("")}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Notes */}
