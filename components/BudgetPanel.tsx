@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
 import { Trip, BlackoutDate, TripCategory, Group } from "@/types";
-import { AlertTriangle, Ban, Check, Monitor, Pencil, Plus, Star, Tag, Trash2, Users, Wallet, X } from "lucide-react";
+import { AlertTriangle, Ban, Check, ChevronDown, ChevronRight, Monitor, Pencil, Plus, Star, Tag, Trash2, Users, Wallet, X } from "lucide-react";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -240,6 +240,14 @@ export default function BudgetPanel() {
     if (affected.length > 0) setBdConflicts(affected);
   }
 
+  // Section collapsed state (all collapsed by default)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    budget: true, blackout: true, groups: true, types: true, display: true,
+  });
+  function toggleSection(key: string) {
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
   // Year range: past years with trips or allocations, current through max future
   const scheduledYears = trips.filter((t) => t.scheduled).map((t) => t.scheduled!.startYear);
   const allocationYears = Object.keys(annualAllocations).map(Number);
@@ -317,10 +325,13 @@ export default function BudgetPanel() {
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
 
           {/* Section header */}
-          <div className="flex items-center gap-3 px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+          <button
+            onClick={() => toggleSection("budget")}
+            className="flex items-center gap-3 px-5 py-4 w-full text-left"
+            style={{ background: "var(--surface-2)", borderBottom: collapsed.budget ? "none" : "1px solid var(--border)" }}
+          >
             <Wallet size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
-            <div>
+            <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
                 Travel Budget
               </h2>
@@ -328,9 +339,10 @@ export default function BudgetPanel() {
                 Set your overall budget, currency, and year-by-year allocations.
               </p>
             </div>
-          </div>
+            {collapsed.budget ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+          </button>
 
-          <div className="p-5">
+          {!collapsed.budget && <div className="p-5">
           <div className="flex flex-wrap items-end gap-6">
 
             {/* Total budget — click-to-edit with Update button */}
@@ -653,7 +665,7 @@ export default function BudgetPanel() {
           ))}
         </div>
 
-          </div>{/* /p-5 */}
+          </div>}{/* /p-5 */}
         </div>{/* /Travel Budget card */}
 
         {/* ══════════════════════════════════════════════════════════
@@ -663,10 +675,13 @@ export default function BudgetPanel() {
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
 
           {/* Section header */}
-          <div className="flex items-center gap-3 px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+          <button
+            onClick={() => toggleSection("blackout")}
+            className="flex items-center gap-3 px-5 py-4 w-full text-left"
+            style={{ background: "var(--surface-2)", borderBottom: collapsed.blackout ? "none" : "1px solid var(--border)" }}
+          >
             <Ban size={16} style={{ color: "#f87171", flexShrink: 0 }} />
-            <div>
+            <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
                 Blackout Dates
               </h2>
@@ -674,9 +689,10 @@ export default function BudgetPanel() {
                 Define periods when you can't travel. Scheduled trips that overlap will show a conflict warning.
               </p>
             </div>
-          </div>
+            {collapsed.blackout ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+          </button>
 
-          <div className="p-5">
+          {!collapsed.blackout && <div className="p-5">
 
           {/* Add form */}
           <div className="flex flex-wrap gap-2 mb-3 items-end">
@@ -847,7 +863,7 @@ export default function BudgetPanel() {
             </div>
           )}
 
-          </div>{/* /p-5 */}
+          </div>}{/* /p-5 */}
         </div>{/* /Blackout Dates card */}
 
         {/* ══════════════════════════════════════════════════════════
@@ -856,22 +872,26 @@ export default function BudgetPanel() {
         <div className="rounded-xl mt-8 overflow-hidden"
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
 
-          <div className="flex items-center gap-3 px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+          <button
+            onClick={() => toggleSection("groups")}
+            className="flex items-center gap-3 px-5 py-4 w-full text-left"
+            style={{ background: "var(--surface-2)", borderBottom: collapsed.groups ? "none" : "1px solid var(--border)" }}
+          >
             <Users size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
-            <div>
+            <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>Travel Groups</h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                 Organize trips by who you're travelling with. The ★ group is the default for new trips.
               </p>
             </div>
-          </div>
+            {collapsed.groups ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+          </button>
 
-          <div className="p-5">
+          {!collapsed.groups && <div className="p-5">
 
           {/* List */}
           <div className="flex flex-col gap-1 mb-4">
-            {groups.map((g) => editGroupId === g.id ? (
+            {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => editGroupId === g.id ? (
               <div key={g.id} className="flex items-center gap-2 px-3 py-2 rounded-lg flex-wrap"
                 style={{ background: "var(--surface-3)", border: "1px solid var(--accent)" }}>
                 <input type="color" value={editGroupColor}
@@ -983,7 +1003,7 @@ export default function BudgetPanel() {
           </div>
           {newGroupError && <p className="text-xs mt-1" style={{ color: "#ef4444" }}>{newGroupError}</p>}
 
-          </div>{/* /p-5 */}
+          </div>}{/* /p-5 */}
         </div>{/* /Travel Groups card */}
 
         {/* ══════════════════════════════════════════════════════════
@@ -993,10 +1013,13 @@ export default function BudgetPanel() {
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
 
           {/* Section header */}
-          <div className="flex items-center gap-3 px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+          <button
+            onClick={() => toggleSection("types")}
+            className="flex items-center gap-3 px-5 py-4 w-full text-left"
+            style={{ background: "var(--surface-2)", borderBottom: collapsed.types ? "none" : "1px solid var(--border)" }}
+          >
             <Tag size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
-            <div>
+            <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
                 Trip Types
               </h2>
@@ -1004,16 +1027,17 @@ export default function BudgetPanel() {
                 Customize the types used to classify your trips.
               </p>
             </div>
-          </div>
+            {collapsed.types ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+          </button>
 
-          <div className="p-5">
+          {!collapsed.types && <div className="p-5">
 
           {/* List */}
           {categories.length === 0 ? (
             <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>No trip types defined.</p>
           ) : (
             <div className="flex flex-col gap-1 mb-4">
-              {categories.map((c) => editCatId === c.id ? (
+              {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => editCatId === c.id ? (
                 <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg flex-wrap"
                   style={{ background: "var(--surface-3)", border: "1px solid var(--accent)" }}>
                   <input
@@ -1103,7 +1127,7 @@ export default function BudgetPanel() {
           </div>
           {newCatError && <p className="text-xs mt-1" style={{ color: "#ef4444" }}>{newCatError}</p>}
 
-          </div>{/* /p-5 */}
+          </div>}{/* /p-5 */}
         </div>{/* /Trip Types card */}
 
         {/* ══════════════════════════════════════════════════════════
@@ -1113,10 +1137,13 @@ export default function BudgetPanel() {
           style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
 
           {/* Section header */}
-          <div className="flex items-center gap-3 px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-2)" }}>
+          <button
+            onClick={() => toggleSection("display")}
+            className="flex items-center gap-3 px-5 py-4 w-full text-left"
+            style={{ background: "var(--surface-2)", borderBottom: collapsed.display ? "none" : "1px solid var(--border)" }}
+          >
             <Monitor size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
-            <div>
+            <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
                 Customizations
               </h2>
@@ -1124,9 +1151,10 @@ export default function BudgetPanel() {
                 Set your appearance and navigation preferences.
               </p>
             </div>
-          </div>
+            {collapsed.display ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+          </button>
 
-          <div className="p-5 flex flex-col gap-5">
+          {!collapsed.display && <div className="p-5 flex flex-col gap-5">
 
             {/* Home Page */}
             <div className="flex items-center justify-between gap-4">
@@ -1158,7 +1186,7 @@ export default function BudgetPanel() {
               />
             </div>
 
-          </div>
+          </div>}
         </div>{/* /Display card */}
 
       </div>

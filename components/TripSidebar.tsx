@@ -175,7 +175,7 @@ export default function TripSidebar() {
           <select className="w-full text-sm rounded-md px-2 py-1.5 outline-none" style={selectStyle(newCategoryId)}
             value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)}>
             <option value="">None</option>
-            {categories.map((c) => (
+            {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
               <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
             ))}
           </select>
@@ -199,7 +199,7 @@ export default function TripSidebar() {
             <select className="flex-1 text-sm rounded-md px-2 py-1.5 outline-none" style={inputStyle}
               value={newGroupId} onChange={(e) => setNewGroupIdOverride(e.target.value)}>
               <option value="">None</option>
-              {groups.map((g) => (
+              {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => (
                 <option key={g.id} value={g.id}>{g.name}{g.isDefault ? " ★" : ""}</option>
               ))}
             </select>

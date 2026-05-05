@@ -97,7 +97,7 @@ export default function FilterBar() {
         {groups.length > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">
             <span style={labelStyle}>Travel Group</span>
-            {groups.map((g) => pill(
+            {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => pill(
               filters.groupIds.includes(g.id), g.color,
               () => toggle(filters.groupIds, g.id, setGroupFilter),
               <><span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: g.color }} />{g.name}</>,
@@ -141,7 +141,7 @@ export default function FilterBar() {
         {categories.length > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">
             <span style={labelStyle}>Travel Type</span>
-            {categories.map((c) => pill(
+            {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => pill(
               filters.categoryIds.includes(c.id), "var(--accent)",
               () => toggle(filters.categoryIds, c.id, setCategoryFilter),
               <>{c.icon} {c.name}</>,

@@ -412,12 +412,12 @@ export default function TripsListPanel() {
               <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={inputStyle}
                 value={newGroupId} onChange={(e) => setNewGroupId(e.target.value)}>
                 <option value="">None</option>
-                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}{g.isDefault ? " ★" : ""}</option>)}
+                {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => <option key={g.id} value={g.id}>{g.name}{g.isDefault ? " ★" : ""}</option>)}
               </select>
               <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={selectStyle(newCategoryId)}
                 value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)}>
                 <option value="">Trip type (optional)</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
               </select>
               <div className="flex items-center gap-1.5">
                 <input type="number" min={1} max={52}
@@ -470,7 +470,7 @@ export default function TripsListPanel() {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
                 style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Travel Group</span>
-              {groups.map((g) => (
+              {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => (
                 <Pill key={g.id} active={groupFilter.includes(g.id)} color={g.color}
                   onClick={() => toggle(groupFilter, g.id, setGroupFilter)}>
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: g.color }} />
@@ -484,7 +484,7 @@ export default function TripsListPanel() {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
                 style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Travel Type</span>
-              {categories.map((c) => (
+              {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
                 <Pill key={c.id} active={categoryFilter.includes(c.id)} color="var(--accent)"
                   onClick={() => toggle(categoryFilter, c.id, setCategoryFilter)}>
                   {c.icon} {c.name}
