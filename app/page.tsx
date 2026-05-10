@@ -11,6 +11,7 @@ import OnboardingModal from "@/components/OnboardingModal";
 import { useTripStore } from "@/store/useTripStore";
 import { CalendarDays, Clock, Download, List, Moon, Settings, Sun, Upload } from "lucide-react";
 import WanderlistIcon from "@/components/WanderlistIcon";
+import { NAV } from "@/lib/content";
 
 type View = "planner" | "trips" | "history" | "budget";
 
@@ -84,10 +85,10 @@ export default function Home() {
             <WanderlistIcon size={22} />
           </span>
           <span className="font-display text-2xl tracking-tight" style={{ color: "var(--accent)" }}>
-            Wanderlist
+            {NAV.appTitle}
           </span>
           <span style={{ color: "var(--text-muted)" }} className="text-sm hidden sm:block">
-            Plan Your Wanderlust!
+            {NAV.appTagline}
           </span>
         </button>
 
@@ -101,7 +102,7 @@ export default function Home() {
             }}
           >
             <CalendarDays size={14} />
-            Timeline
+            {NAV.timeline}
           </button>
           <button
             onClick={() => setView("trips")}
@@ -112,7 +113,7 @@ export default function Home() {
             }}
           >
             <List size={14} />
-            Trips
+            {NAV.trips}
           </button>
           <button
             onClick={() => setView("history")}
@@ -123,7 +124,7 @@ export default function Home() {
             }}
           >
             <Clock size={14} />
-            History
+            {NAV.history}
           </button>
           <button
             onClick={() => setView("budget")}
@@ -134,7 +135,7 @@ export default function Home() {
             }}
           >
             <Settings size={14} />
-            Settings
+            {NAV.settings}
           </button>
 
           <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />

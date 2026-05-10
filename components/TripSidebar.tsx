@@ -11,6 +11,7 @@ import TripCard from "@/components/TripCard";
 import { Plus, X } from "lucide-react";
 import { Trip } from "@/types";
 import { inferContinent } from "@/utils/inferContinent";
+import { TRIP_SIDEBAR } from "@/lib/content";
 
 function uid() { return crypto.randomUUID(); }
 
@@ -54,13 +55,13 @@ function DroppableTripList({ children, isEmpty, sortableIds }: {
       {isOver ? (
         <div className="flex flex-col items-center justify-center h-full gap-2 pointer-events-none">
           <span className="text-2xl">✈️</span>
-          <p className="text-sm font-medium" style={{ color: "var(--accent)" }}>Drop to unschedule</p>
+          <p className="text-sm font-medium" style={{ color: "var(--accent)" }}>{TRIP_SIDEBAR.dropToUnschedule}</p>
         </div>
       ) : isEmpty ? (
         <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-4">
           <span className="text-3xl">✈️</span>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            No unscheduled trips. Add one above or drag a trip back from the calendar.
+            {TRIP_SIDEBAR.emptyState}
           </p>
         </div>
       ) : (
@@ -142,7 +143,7 @@ export default function TripSidebar() {
       <div className="flex items-center justify-between px-4 py-3 shrink-0"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-          Unscheduled Trips
+          {TRIP_SIDEBAR.header}
           <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
             style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}>
             {unscheduled.length}
@@ -161,12 +162,12 @@ export default function TripSidebar() {
           style={{ borderBottom: "1px solid var(--border-subtle)", background: "var(--surface-2)" }}>
 
           <input className="w-full text-sm rounded-md px-3 py-1.5 outline-none" style={inputStyle}
-            placeholder="Trip name *" value={newTitle}
+            placeholder={TRIP_SIDEBAR.formPlaceholders.tripName} value={newTitle}
             onChange={(e) => { setNewTitle(e.target.value); setDupError(""); }} />
           {dupError && <p className="text-xs" style={{ color: "#ef4444" }}>{dupError}</p>}
 
           <input className="w-full text-sm rounded-md px-3 py-1.5 outline-none" style={inputStyle}
-            placeholder="Destination (city, country)"
+            placeholder={TRIP_SIDEBAR.formPlaceholders.destination}
             value={newDest} onChange={(e) => setNewDest(e.target.value)} />
           {inferred && newDest && (
             <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>📍 {inferred}</p>
@@ -190,7 +191,7 @@ export default function TripSidebar() {
             ))}
             <input className="flex-1 min-w-[80px] text-xs outline-none bg-transparent"
               style={{ color: "var(--text-primary)" }}
-              placeholder={newTags.length === 0 ? "Tags (Enter to add)" : ""}
+              placeholder={newTags.length === 0 ? TRIP_SIDEBAR.formPlaceholders.tags : ""}
               value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown} />
           </div>
@@ -208,16 +209,16 @@ export default function TripSidebar() {
                 className="w-14 text-sm rounded-md px-2 py-1.5 outline-none text-center"
                 style={inputStyle} value={newDuration}
                 onChange={(e) => setNewDuration(Number(e.target.value))} />
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>wks</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_SIDEBAR.durationUnit}</span>
             </div>
           </div>
 
           <div className="flex gap-2 mt-1">
             <button onClick={handleAddTrip} className="flex-1 text-sm py-1.5 rounded-md font-medium"
-              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>Add Trip</button>
+              style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>{TRIP_SIDEBAR.addTripButton}</button>
             <button onClick={() => { setShowAddTrip(false); setDupError(""); }}
               className="px-3 text-sm py-1.5 rounded-md font-medium"
-              style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>Cancel</button>
+              style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>{TRIP_SIDEBAR.cancelButton}</button>
           </div>
         </div>
       )}

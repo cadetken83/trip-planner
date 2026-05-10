@@ -5,11 +5,7 @@ import { useTripStore, selectScheduledTrips, selectHistoryTrips, blackoutTouches
 import { Trip, Group, BlackoutDate } from "@/types";
 import MonthCell, { LaneEntry } from "@/components/MonthCell";
 import { ChevronDown, ChevronRight, ChevronLeft, CalendarDays, ChevronsUpDown, AlertTriangle } from "lucide-react";
-
-const MONTH_NAMES = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec",
-];
+import { MONTH_NAMES_SHORT } from "@/lib/content";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -173,7 +169,7 @@ function DensityStrip({ year, trips, groups, compact }: {
         return (
           <div key={m} className="flex-1 rounded-full transition-colors"
             style={{ background: color, height: compact ? "6px" : "4px" }}
-            title={`${MONTH_NAMES[m]}: ${touching.length} trip${touching.length !== 1 ? "s" : ""}`}
+            title={`${MONTH_NAMES_SHORT[m]}: ${touching.length} trip${touching.length !== 1 ? "s" : ""}`}
           />
         );
       })}

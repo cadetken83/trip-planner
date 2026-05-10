@@ -5,16 +5,7 @@ import { useTripStore } from "@/store/useTripStore";
 import { inferContinent } from "@/utils/inferContinent";
 import { Trip, TripStatus, Continent } from "@/types";
 import { AlertTriangle, X, Trash2, Ban } from "lucide-react";
-
-const MONTH_NAMES = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
-];
-
-const CONTINENTS: Continent[] = [
-  "North America","South America","Europe",
-  "Africa","Asia","Oceania","Antarctica",
-];
+import { TRIP_EDIT, MONTH_NAMES_LONG, CONTINENTS } from "@/lib/content";
 
 const SCHEDULED_STATUSES: { value: TripStatus; label: string }[] = [
   { value: "unscheduled", label: "Unscheduled" },
@@ -126,7 +117,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
     const bookByIdx = bookByYear * 12 + bookByMonth;
     const startIdx  = startYear  * 12 + startMonth;
     if (bookByIdx >= startIdx) {
-      setBookByError("Book By date must be before the trip's start month.");
+      setBookByError(TRIP_EDIT.warnings.bookByBefore);
       return false;
     }
     setBookByError("");
@@ -241,7 +232,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 className="font-display text-lg" style={{ color: "var(--text-primary)" }}>Trip Detail</h2>
+          <h2 className="font-display text-lg" style={{ color: "var(--text-primary)" }}>{TRIP_EDIT.modalTitle}</h2>
           <button onClick={onClose} style={{ color: "var(--text-muted)" }}><X size={18} /></button>
         </div>
 
@@ -250,21 +241,21 @@ export default function TripEditModal({ trip, onClose }: Props) {
           <div className="px-5 py-4 flex flex-col gap-3"
             style={{ background: "#f59e0b11", borderBottom: "1px solid #f59e0b33" }}>
             <p className="text-sm font-medium" style={{ color: "#f59e0b" }}>
-              ⚠️ This trip is booked — confirm date/duration change?
+              {TRIP_EDIT.warnings.bookedChangTitle}
             </p>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              You're modifying dates or duration on a booked trip. Make sure any flights or hotels are updated accordingly.
+              {TRIP_EDIT.warnings.bookedChangBody}
             </p>
             <div className="flex gap-2">
               <button onClick={() => { setBookedDateChange(false); setPendingSave(null); }}
                 className="flex-1 py-1.5 rounded-lg text-sm"
                 style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>
-                Go back
+                {TRIP_EDIT.actions.goBack}
               </button>
               <button onClick={handleConfirmBookedChange}
                 className="flex-1 py-1.5 rounded-lg text-sm font-medium"
                 style={{ background: "#f59e0b", color: "#0c0a09" }}>
-                Confirm change
+                {TRIP_EDIT.actions.confirmChange}
               </button>
             </div>
           </div>
@@ -276,10 +267,10 @@ export default function TripEditModal({ trip, onClose }: Props) {
             style={{ background: "#ef444411", borderBottom: "1px solid #ef444433" }}>
             <Ban size={14} style={{ color: "#ef4444", flexShrink: 0, marginTop: "2px" }} />
             <div>
-              <p className="text-sm font-medium" style={{ color: "#ef4444" }}>Scheduling Conflict</p>
+              <p className="text-sm font-medium" style={{ color: "#ef4444" }}>{TRIP_EDIT.warnings.conflictTitle}</p>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                 Dates overlap: <strong>{conflictingBlackouts.map((b) => b.label).join(", ")}</strong>.
-                Adjust dates or update blackout periods in Settings.
+                {TRIP_EDIT.warnings.conflictBody}
               </p>
             </div>
           </div>
@@ -289,24 +280,24 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Trip Name *</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.tripName}</label>
             <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
               value={title} onChange={(e) => { setTitle(e.target.value); setDupError(""); }}
-              placeholder="Trip name" />
+              placeholder={TRIP_EDIT.placeholders.tripName} />
             {dupError && <p className="text-xs" style={{ color: "#ef4444" }}>{dupError}</p>}
           </div>
 
           {/* Destination */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Destination</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.destination}</label>
             <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
               value={destination} onChange={(e) => setDestination(e.target.value)}
-              placeholder="City, Country" />
+              placeholder={TRIP_EDIT.placeholders.destination} />
           </div>
 
           {/* Continent */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Continent</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.continent}</label>
             <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
               value={continent}
               onChange={(e) => setContinent(e.target.value as Continent | "")}>
@@ -317,7 +308,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Trip Type */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Trip Type</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.tripType}</label>
             <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={selectStyle(categoryId)}
               value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">None</option>
@@ -329,7 +320,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Tags */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Tags</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.tags}</label>
             <div className="flex flex-wrap gap-1 rounded-md px-2 py-1.5 min-h-[36px]" style={inputStyle}>
               {tags.map((tag) => (
                 <span key={tag} className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
@@ -340,7 +331,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
               ))}
               <input className="flex-1 min-w-[80px] text-xs outline-none bg-transparent"
                 style={{ color: "var(--text-primary)" }}
-                placeholder={tags.length === 0 ? "Type and press Enter" : ""}
+                placeholder={tags.length === 0 ? TRIP_EDIT.placeholders.tags : ""}
                 value={tagInput} onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleTagKeyDown} />
             </div>
@@ -349,7 +340,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {/* Group + Status */}
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-xs" style={{ color: "var(--text-muted)" }}>Travel Group</label>
+              <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.travelGroup}</label>
               <select className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
                 value={groupId} onChange={(e) => setGroupId(e.target.value)}>
                 <option value="">None</option>
@@ -359,7 +350,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
               </select>
             </div>
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-xs" style={{ color: "var(--text-muted)" }}>Status</label>
+              <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.status}</label>
               {!localIsScheduled ? (
                 <div className="flex items-center gap-2">
                   <div className="flex-1 text-sm rounded-md px-3 py-2"
@@ -376,7 +367,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
                     style={{ background: "var(--accent-dim)", color: "var(--accent)", border: "1px solid var(--accent)", whiteSpace: "nowrap" }}
                     title="Set calendar dates for this trip"
                   >
-                    + Schedule
+                    {TRIP_EDIT.actions.schedule}
                   </button>
                 </div>
               ) : (
@@ -396,12 +387,12 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Duration */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Duration</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.duration}</label>
             <div className="flex items-center gap-2">
               <input type="number" min={1} max={52}
                 className="w-20 text-sm rounded-md px-3 py-2 outline-none text-center" style={inputStyle}
                 value={durationWeeks} onChange={(e) => setDurationWeeks(Number(e.target.value))} />
-              <span className="text-sm" style={{ color: "var(--text-muted)" }}>weeks</span>
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.durationUnit}</span>
             </div>
             {durationWarn && (
               <p className="text-xs" style={{ color: "#f59e0b" }}>
@@ -412,7 +403,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Estimated Cost */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Estimated Cost</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.estimatedCost}</label>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-2 rounded-md"
                 style={{ background: "var(--surface-3)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
@@ -430,7 +421,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {localIsScheduled && (
             <div ref={scheduleRef} className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <label className="text-xs" style={{ color: "var(--text-muted)" }}>Calendar Range</label>
+                <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.calendarRange}</label>
                 {wantsToSchedule && (
                   <button
                     type="button"
@@ -438,14 +429,14 @@ export default function TripEditModal({ trip, onClose }: Props) {
                     className="ml-auto text-xs px-2 py-0.5 rounded-full border transition-colors"
                     style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
                   >
-                    ✕ Remove dates
+                    {TRIP_EDIT.actions.removeDates}
                   </button>
                 )}
               </div>
               <div className="flex gap-3">
                 {/* Start */}
                 <div className="flex flex-col gap-1 flex-1">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>Start</span>
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.calendarStart}</span>
                   <div className="flex gap-1">
                     <select className="flex-1 text-xs rounded-md px-2 py-1.5 outline-none" style={inputStyle}
                       value={startMonth}
@@ -456,7 +447,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
                         if (wantsToSchedule || startYear * 12 + m > endYear * 12 + endMonth)
                           setEndMonth(m);
                       }}>
-                      {MONTH_NAMES.map((m, i) => <option key={m} value={i}>{m.slice(0, 3)}</option>)}
+                      {MONTH_NAMES_LONG.map((m, i) => <option key={m} value={i}>{m.slice(0, 3)}</option>)}
                     </select>
                     <select className="text-xs rounded-md px-2 py-1.5 outline-none" style={inputStyle}
                       value={startYear}
@@ -475,7 +466,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
                 {/* End */}
                 <div className="flex flex-col gap-1 flex-1">
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>End</span>
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.calendarEnd}</span>
                   <div className="flex gap-1">
                     <select className="flex-1 text-xs rounded-md px-2 py-1.5 outline-none" style={inputStyle}
                       value={endMonth}
@@ -484,7 +475,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
                         // Snap back to start if end would go before it
                         setEndMonth(endYear * 12 + m < startYear * 12 + startMonth ? startMonth : m);
                       }}>
-                      {MONTH_NAMES.map((m, i) => <option key={m} value={i}>{m.slice(0, 3)}</option>)}
+                      {MONTH_NAMES_LONG.map((m, i) => <option key={m} value={i}>{m.slice(0, 3)}</option>)}
                     </select>
                     <select className="text-xs rounded-md px-2 py-1.5 outline-none" style={inputStyle}
                       value={endYear}
@@ -509,7 +500,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {localIsScheduled && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <label className="text-xs" style={{ color: "var(--text-muted)" }}>Book By Date</label>
+                <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.bookByDate}</label>
                 <button onClick={() => { setShowBookBy(!showBookBy); setBookByError(""); }}
                   className="text-xs px-2 py-0.5 rounded-full border transition-all"
                   style={{
@@ -517,7 +508,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
                     color: showBookBy ? "var(--accent)" : "var(--text-muted)",
                     background: showBookBy ? "var(--accent-dim)" : "transparent",
                   }}>
-                  {showBookBy ? "Remove" : "Add"}
+                  {showBookBy ? TRIP_EDIT.actions.removeBookBy : TRIP_EDIT.actions.addBookBy}
                 </button>
               </div>
               {showBookBy && (
@@ -525,7 +516,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
                   <div className="flex gap-2 items-center">
                     <select className="text-sm rounded-md px-2 py-1.5 outline-none flex-1" style={inputStyle}
                       value={bookByMonth} onChange={(e) => { setBookByMonth(Number(e.target.value)); setBookByError(""); }}>
-                      {MONTH_NAMES.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                      {MONTH_NAMES_LONG.map((m, i) => <option key={m} value={i}>{m}</option>)}
                     </select>
                     <select className="text-sm rounded-md px-2 py-1.5 outline-none" style={inputStyle}
                       value={bookByYear} onChange={(e) => { setBookByYear(Number(e.target.value)); setBookByError(""); }}>
@@ -546,7 +537,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle size={12} style={{ color: "#f59e0b", flexShrink: 0 }} />
                         <p className="text-xs" style={{ color: "#f59e0b" }}>
-                          Book By date has passed — book this trip or remove the date.
+                          {TRIP_EDIT.warnings.bookByPassed}
                         </p>
                       </div>
                     );
@@ -558,11 +549,11 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Image URL */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Image URL</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.imageUrl}</label>
             <div className="relative">
               <input className="w-full text-sm rounded-md px-3 py-2 pr-8 outline-none" style={inputStyle}
                 value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..." />
+                placeholder={TRIP_EDIT.placeholders.imageUrl} />
               {imageUrl && (
                 <button
                   type="button"
@@ -578,11 +569,11 @@ export default function TripEditModal({ trip, onClose }: Props) {
 
           {/* Notes */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "var(--text-muted)" }}>Notes</label>
+            <label className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.labels.notes}</label>
             <textarea className="w-full text-sm rounded-md px-3 py-2 outline-none resize-none"
               style={{ ...inputStyle, minHeight: "72px" }}
               value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any notes about this trip..." />
+              placeholder={TRIP_EDIT.placeholders.notes} />
           </div>
         </div>
 
@@ -592,32 +583,32 @@ export default function TripEditModal({ trip, onClose }: Props) {
           {confirmDelete ? (
             <div className="flex items-center gap-2 flex-wrap">
               {trip.status === "booked" && (
-                <span className="text-xs font-medium" style={{ color: "#ef4444" }}>⚠️ This trip is booked!</span>
+                <span className="text-xs font-medium" style={{ color: "#ef4444" }}>{TRIP_EDIT.warnings.bookedLabel}</span>
               )}
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Delete permanently?</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{TRIP_EDIT.warnings.deletePrompt}</span>
               <button onClick={handleDelete} className="text-xs px-3 py-1.5 rounded-md font-medium"
-                style={{ background: "#ef4444", color: "#fff" }}>Delete</button>
+                style={{ background: "#ef4444", color: "#fff" }}>{TRIP_EDIT.actions.deleteConfirm}</button>
               <button onClick={() => setConfirmDelete(false)} className="text-xs px-3 py-1.5 rounded-md"
-                style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>Cancel</button>
+                style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>{TRIP_EDIT.actions.cancel}</button>
             </div>
           ) : (
             <button onClick={() => setConfirmDelete(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-red-950"
               style={{ color: "#ef4444" }}>
               <Trash2 size={12} />
-              Delete trip
+              {TRIP_EDIT.actions.deleteTrip}
             </button>
           )}
 
           <div className="flex gap-2 ml-auto">
             <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg"
               style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>
-              Cancel
+              {TRIP_EDIT.actions.cancel}
             </button>
             <button onClick={handleSave}
               className="text-sm px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-90"
               style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>
-              Save Changes
+              {TRIP_EDIT.actions.saveChanges}
             </button>
           </div>
         </div>

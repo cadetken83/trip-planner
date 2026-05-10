@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
 import { Trip, BlackoutDate, TripCategory, Group } from "@/types";
 import { AlertTriangle, Ban, Check, ChevronDown, ChevronRight, Monitor, Pencil, Plus, Star, Tag, Trash2, Users, Wallet, X } from "lucide-react";
+import { SETTINGS, MONTH_NAMES_SHORT } from "@/lib/content";
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = MONTH_NAMES_SHORT;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -333,10 +334,10 @@ export default function BudgetPanel() {
             <Wallet size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
             <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
-                Travel Budget
+                {SETTINGS.sections.budget.title}
               </h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Set your overall budget, currency, and year-by-year allocations.
+                {SETTINGS.sections.budget.subtitle}
               </p>
             </div>
             {collapsed.budget ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
@@ -683,10 +684,10 @@ export default function BudgetPanel() {
             <Ban size={16} style={{ color: "#f87171", flexShrink: 0 }} />
             <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
-                Blackout Dates
+                {SETTINGS.sections.blackout.title}
               </h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Define periods when you can't travel. Scheduled trips that overlap will show a conflict warning.
+                {SETTINGS.sections.blackout.subtitle}
               </p>
             </div>
             {collapsed.blackout ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
@@ -879,9 +880,9 @@ export default function BudgetPanel() {
           >
             <Users size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
             <div className="flex-1">
-              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>Travel Groups</h2>
+              <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>{SETTINGS.sections.groups.title}</h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Organize trips by who you're travelling with. The ★ group is the default for new trips.
+                {SETTINGS.sections.groups.subtitle}
               </p>
             </div>
             {collapsed.groups ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
@@ -1021,10 +1022,10 @@ export default function BudgetPanel() {
             <Tag size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
             <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
-                Trip Types
+                {SETTINGS.sections.types.title}
               </h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Customize the types used to classify your trips.
+                {SETTINGS.sections.types.subtitle}
               </p>
             </div>
             {collapsed.types ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
@@ -1145,10 +1146,10 @@ export default function BudgetPanel() {
             <Monitor size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
             <div className="flex-1">
               <h2 className="font-display text-base" style={{ color: "var(--text-primary)" }}>
-                Customizations
+                {SETTINGS.sections.display.title}
               </h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Set your appearance and navigation preferences.
+                {SETTINGS.sections.display.subtitle}
               </p>
             </div>
             {collapsed.display ? <ChevronRight size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}

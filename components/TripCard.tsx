@@ -7,6 +7,7 @@ import { Trip, Group } from "@/types";
 import { MapPin, Clock, GripVertical, Trash2 } from "lucide-react";
 import TripEditModal from "@/components/TripEditModal";
 import { useTripStore } from "@/store/useTripStore";
+import { TRIP_CARD } from "@/lib/content";
 
 type Props = {
   trip: Trip;
@@ -101,7 +102,7 @@ export default function TripCard({ trip, group, sortHandleProps }: Props) {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs px-2 py-0.5 rounded-full"
                   style={{ background: `${groupColor}22`, color: groupColor }}>
-                  {group?.name ?? "No group"}
+                  {group?.name ?? TRIP_CARD.noGroup}
                 </span>
                 {category && (
                   <span className="text-xs" title={category.name}>{category.icon}</span>

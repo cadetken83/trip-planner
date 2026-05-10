@@ -6,6 +6,7 @@ import {
   CalendarDays, List, Clock, Settings, Download, Upload,
 } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
+import { ONBOARDING } from "@/lib/content";
 
 // ─── Slide Visuals ────────────────────────────────────────────────────────────
 
@@ -226,33 +227,9 @@ function VisualExplore() {
 
 type Step = { title: string; body: string; Visual: React.FC };
 
-const STEPS: Step[] = [
-  {
-    title: "Welcome to Wanderlist",
-    body: "Wanderlist is your visual travel planner — collect trip ideas, schedule them on a shared calendar, and track everything from wishlist to booked. This short tour covers the key features. You can reopen it anytime from the ? button in the nav.",
-    Visual: VisualWelcome,
-  },
-  {
-    title: "Add & Organize Your Trips",
-    body: "Open the sidebar and tap the + button to add a new trip. Give it a name, destination, trip type, and estimated duration in weeks. It lands in your Unscheduled queue, ready to be placed on the calendar.",
-    Visual: VisualAddTrip,
-  },
-  {
-    title: "Schedule Trips by Dragging",
-    body: "Drag any unscheduled trip from the sidebar and drop it onto a month on the calendar. The bar appears spanning the duration you set. Drag the edges to resize, or drag the bar itself to move to a new month.",
-    Visual: VisualSchedule,
-  },
-  {
-    title: "Click Any Trip to Edit Details",
-    body: "Click a trip bar on the calendar (or a card in the sidebar) to open the details panel. Set the status from Planning to Booked, add notes, estimated cost, a Book By deadline, and more.",
-    Visual: VisualEditModal,
-  },
-  {
-    title: "Explore Every View",
-    body: "Switch between Timeline, Trips, History, and Settings using the top nav. Use the export icon to save your trips as a JSON backup, or the import icon to restore from a saved file.",
-    Visual: VisualExplore,
-  },
-];
+const VISUALS: React.FC[] = [VisualWelcome, VisualAddTrip, VisualSchedule, VisualEditModal, VisualExplore];
+
+const STEPS: Step[] = ONBOARDING.steps.map((s, i) => ({ ...s, Visual: VISUALS[i] }));
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
@@ -414,7 +391,7 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
                     fontSize: 13, color: "var(--text-muted)",
                   }}
                 >
-                  Back
+                  {ONBOARDING.buttons.back}
                 </button>
               )}
             </div>
@@ -428,7 +405,7 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
                     fontSize: 13, color: "var(--text-muted)", padding: "6px 4px",
                   }}
                 >
-                  Skip
+                  {ONBOARDING.buttons.skip}
                 </button>
               )}
               <button
@@ -439,7 +416,7 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
                   fontSize: 13, fontWeight: 600, color: "#000",
                 }}
               >
-                {isLast ? "Get Started" : "Next"}
+                {isLast ? ONBOARDING.buttons.getStarted : ONBOARDING.buttons.next}
               </button>
             </div>
           </div>

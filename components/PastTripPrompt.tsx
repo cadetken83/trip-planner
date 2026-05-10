@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { useTripStore } from "@/store/useTripStore";
 import { Trip } from "@/types";
 import { CheckCircle, X, Clock } from "lucide-react";
-
-const MONTH_NAMES = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec",
-];
+import { PAST_TRIP_PROMPT, MONTH_NAMES_SHORT } from "@/lib/content";
 
 export default function PastTripPrompt() {
   const { trips, groups, completeTrip, unscheduleTrip } = useTripStore();
@@ -58,8 +54,8 @@ export default function PastTripPrompt() {
   const { startMonth, startYear, endMonth, endYear } = current.scheduled;
   const dateRange =
     startMonth === endMonth && startYear === endYear
-      ? `${MONTH_NAMES[startMonth]} ${startYear}`
-      : `${MONTH_NAMES[startMonth]} ${startYear} – ${MONTH_NAMES[endMonth]} ${endYear}`;
+      ? `${MONTH_NAMES_SHORT[startMonth]} ${startYear}`
+      : `${MONTH_NAMES_SHORT[startMonth]} ${startYear} – ${MONTH_NAMES_SHORT[endMonth]} ${endYear}`;
 
   const remaining = queue.filter((t) => !dismissed.has(t.id)).length;
 
@@ -77,11 +73,11 @@ export default function PastTripPrompt() {
         <div className="flex items-center gap-2">
           <Clock size={14} style={{ color: groupColor }} />
           <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-            Did this trip happen?
+            {PAST_TRIP_PROMPT.question}
             {remaining > 1 && (
               <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs"
                 style={{ background: "var(--surface-3)", color: "var(--text-muted)" }}>
-                {remaining} remaining
+                {remaining} {PAST_TRIP_PROMPT.remaining}
               </span>
             )}
           </span>
@@ -117,7 +113,7 @@ export default function PastTripPrompt() {
           className="flex-1 py-2.5 text-sm transition-colors hover:bg-stone-700"
           style={{ color: "var(--text-muted)", borderRight: "1px solid var(--border)" }}
         >
-          Didn't happen
+          {PAST_TRIP_PROMPT.didntHappen}
         </button>
         <button
           onClick={handleYes}
@@ -125,7 +121,7 @@ export default function PastTripPrompt() {
           style={{ color: groupColor }}
         >
           <CheckCircle size={13} />
-          Yes, mark complete
+          {PAST_TRIP_PROMPT.markComplete}
         </button>
       </div>
     </div>

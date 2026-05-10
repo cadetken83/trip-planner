@@ -3,11 +3,7 @@
 import { useTripStore } from "@/store/useTripStore";
 import { Continent, TripStatus } from "@/types";
 import { Search, X } from "lucide-react";
-
-const CONTINENTS: Continent[] = [
-  "North America","South America","Europe",
-  "Africa","Asia","Oceania","Antarctica",
-];
+import { FILTER_BAR, CONTINENTS } from "@/lib/content";
 
 const STATUS_FILTERS: { value: TripStatus; label: string; color: string }[] = [
   { value: "planning", label: "Planning", color: "#94a3b8" }, // slate — visible in both themes
@@ -79,7 +75,7 @@ export default function FilterBar() {
           <Search size={11} style={{ color: filters.searchQuery ? "var(--accent)" : "var(--text-muted)" }} />
           <input
             type="text"
-            placeholder="Search trips…"
+            placeholder={FILTER_BAR.searchPlaceholder}
             value={filters.searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="outline-none bg-transparent text-xs w-44"
@@ -96,7 +92,7 @@ export default function FilterBar() {
 
         {groups.length > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">
-            <span style={labelStyle}>Travel Group</span>
+            <span style={labelStyle}>{FILTER_BAR.travelGroup}</span>
             {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => pill(
               filters.groupIds.includes(g.id), g.color,
               () => toggle(filters.groupIds, g.id, setGroupFilter),
@@ -109,7 +105,7 @@ export default function FilterBar() {
         <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <span style={labelStyle}>Status</span>
+          <span style={labelStyle}>{FILTER_BAR.status}</span>
           {STATUS_FILTERS.map(({ value, label, color }) => pill(
             filters.statuses.includes(value), color,
             () => toggle(filters.statuses, value, setStatusFilter as any),
@@ -131,7 +127,7 @@ export default function FilterBar() {
             fontWeight:  600,
           }}>
           <X size={11} />
-          Clear Filters
+          {FILTER_BAR.clearFilters}
         </button>
       </div>
 
@@ -140,7 +136,7 @@ export default function FilterBar() {
 
         {categories.length > 0 && (
           <div className="flex items-center gap-1.5 shrink-0">
-            <span style={labelStyle}>Travel Type</span>
+            <span style={labelStyle}>{FILTER_BAR.travelType}</span>
             {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => pill(
               filters.categoryIds.includes(c.id), "var(--accent)",
               () => toggle(filters.categoryIds, c.id, setCategoryFilter),
@@ -153,7 +149,7 @@ export default function FilterBar() {
         <div className="w-px h-4 shrink-0" style={{ background: "var(--border)" }} />
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <span style={labelStyle}>Region</span>
+          <span style={labelStyle}>{FILTER_BAR.region}</span>
           {CONTINENTS.map((c) => pill(
             filters.continents.includes(c), "var(--accent)",
             () => toggle(filters.continents, c, setContinentFilter as any),

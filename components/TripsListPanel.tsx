@@ -6,15 +6,11 @@ import { Trip, TripStatus } from "@/types";
 import TripEditModal from "@/components/TripEditModal";
 import { inferContinent } from "@/utils/inferContinent";
 import { MapPin, Clock, CalendarDays, BookOpen, Pencil, Check, Tag, X, Plus, AlertTriangle, Ban } from "lucide-react";
+import { TRIPS_LIST, TRIP_CARD, MONTH_NAMES_SHORT } from "@/lib/content";
 
 function uid() { return crypto.randomUUID(); }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const MONTH_NAMES = [
-  "Jan","Feb","Mar","Apr","May","Jun",
-  "Jul","Aug","Sep","Oct","Nov","Dec",
-];
 
 // Completed is last so active trips stay at the top
 const STATUS_ORDER: TripStatus[] = ["booked", "planning", "unscheduled", "completed"];
@@ -26,12 +22,7 @@ const STATUS_META: Record<TripStatus, { label: string; color: string; bg: string
   completed:   { label: "Completed",   color: "#6366F1", bg: "#6366F120" },
 };
 
-const STATUS_SECTION_LABELS: Record<TripStatus, string> = {
-  booked:      "Booked",
-  planning:    "In Planning",
-  unscheduled: "Unscheduled",
-  completed:   "Completed",
-};
+const STATUS_SECTION_LABELS = TRIPS_LIST.statusSectionLabels as Record<TripStatus, string>;
 
 // Badge bg/text colors for overlay on images
 const STATUS_BADGE_STYLE: Record<TripStatus, { bg: string; text: string }> = {
@@ -45,8 +36,8 @@ function formatDateRange(trip: Trip): string {
   if (!trip.scheduled) return "";
   const { startMonth, startYear, endMonth, endYear } = trip.scheduled;
   if (startMonth === endMonth && startYear === endYear)
-    return `${MONTH_NAMES[startMonth]} ${startYear}`;
-  return `${MONTH_NAMES[startMonth]} ${startYear} – ${MONTH_NAMES[endMonth]} ${endYear}`;
+    return `${MONTH_NAMES_SHORT[startMonth]} ${startYear}`;
+  return `${MONTH_NAMES_SHORT[startMonth]} ${startYear} – ${MONTH_NAMES_SHORT[endMonth]} ${endYear}`;
 }
 
 function isBookByOverdue(trip: Trip): boolean {
@@ -114,7 +105,7 @@ function TripCard({ trip }: { trip: Trip }) {
               style={{ top: "10px", right: "10px", background: "#ef4444", color: "#fff" }}
             >
               <AlertTriangle size={10} />
-              Book overdue
+              {TRIP_CARD.bookOverdue}
             </span>
           )}
 
@@ -174,7 +165,7 @@ function TripCard({ trip }: { trip: Trip }) {
               style={{ color: overdue ? "#ef4444" : "#d97706" }}
             >
               {overdue && <AlertTriangle size={10} />}
-              Book by{trip.bookBy.day ? ` ${trip.bookBy.day}` : ""} {MONTH_NAMES[trip.bookBy.month]} {trip.bookBy.year}
+              Book by{trip.bookBy.day ? ` ${trip.bookBy.day}` : ""} {MONTH_NAMES_SHORT[trip.bookBy.month]} {trip.bookBy.year}
             </span>
           )}
 
@@ -182,7 +173,7 @@ function TripCard({ trip }: { trip: Trip }) {
           {hasConflict && (
             <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "#ef4444" }}>
               <Ban size={10} />
-              Overlaps a blackout period
+              {TRIP_CARD.blackoutOverlap}
             </span>
           )}
 
@@ -211,7 +202,7 @@ function TripCard({ trip }: { trip: Trip }) {
           <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
             <span className="text-xs px-2 py-0.5 rounded-full"
               style={{ background: `${color}22`, color }}>
-              {group?.name ?? "No group"}
+              {group?.name ?? TRIP_CARD.noGroup}
             </span>
             {category && (
               <span className="text-xs" style={{ color: "var(--text-muted)" }} title={category.name}>
@@ -371,7 +362,7 @@ export default function TripsListPanel() {
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xl" style={{ color: "var(--text-secondary)" }}>All Trips</h2>
+          <h2 className="font-display text-xl" style={{ color: "var(--text-secondary)" }}>{TRIPS_LIST.pageTitle}</h2>
           <span className="text-xs px-2 py-0.5 rounded-md"
             style={{ background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}>
             {filtered.length} / {trips.length}
@@ -382,7 +373,7 @@ export default function TripsListPanel() {
             style={{ background: "#f59e0b", color: "#1c1917" }}
           >
             <Plus size={14} />
-            Add Trip
+            {TRIPS_LIST.addTripButton}
           </button>
         </div>
 
@@ -391,18 +382,18 @@ export default function TripsListPanel() {
           <div className="rounded-xl px-5 py-4 mb-5 flex flex-col gap-3"
             style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}>
             <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)", letterSpacing: "0.07em" }}>
-              New Trip
+              {TRIPS_LIST.newTripLabel}
             </p>
             <div className="flex flex-col gap-1">
               <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
-                placeholder="Trip name *" value={newTitle} autoFocus
+                placeholder={TRIPS_LIST.formPlaceholders.tripName} value={newTitle} autoFocus
                 onChange={(e) => { setNewTitle(e.target.value); setDupError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleAddTrip()} />
               {dupError && <p className="text-xs" style={{ color: "#ef4444" }}>{dupError}</p>}
             </div>
             <div className="flex flex-col gap-1">
               <input className="w-full text-sm rounded-md px-3 py-2 outline-none" style={inputStyle}
-                placeholder="Destination (optional)" value={newDest}
+                placeholder={TRIPS_LIST.formPlaceholders.destination} value={newDest}
                 onChange={(e) => setNewDest(e.target.value)} />
               {inferContinent(newDest) && newDest && (
                 <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>📍 {inferContinent(newDest)}</p>
@@ -416,7 +407,7 @@ export default function TripsListPanel() {
               </select>
               <select className="flex-1 text-sm rounded-md px-2 py-2 outline-none min-w-[120px]" style={selectStyle(newCategoryId)}
                 value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)}>
-                <option value="">Trip type (optional)</option>
+                <option value="">{TRIPS_LIST.formPlaceholders.tripType}</option>
                 {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
               </select>
               <div className="flex items-center gap-1.5">
@@ -436,17 +427,17 @@ export default function TripsListPanel() {
               ))}
               <input className="flex-1 min-w-[100px] text-sm outline-none bg-transparent"
                 style={{ color: "var(--text-primary)" }}
-                placeholder={newTags.length === 0 ? "Tags — press Enter to add" : ""}
+                placeholder={newTags.length === 0 ? TRIPS_LIST.formPlaceholders.tags : ""}
                 value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)}
                 onKeyDown={handleTagKeyDown} />
             </div>
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setShowAddForm(false); setNewTitle(""); setNewDest(""); setNewTags([]); setNewTagInput(""); setDupError(""); }}
                 className="px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>Cancel</button>
+                style={{ background: "var(--surface-3)", color: "var(--text-secondary)" }}>{TRIPS_LIST.cancelButton}</button>
               <button onClick={handleAddTrip}
                 className="px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>Add Trip</button>
+                style={{ background: "var(--btn-primary)", color: "var(--btn-primary-text)" }}>{TRIPS_LIST.addTripButton}</button>
             </div>
           </div>
         )}
@@ -457,7 +448,7 @@ export default function TripsListPanel() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-              style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Status</span>
+              style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{TRIPS_LIST.filterLabels.status}</span>
             {STATUS_ORDER.map((s) => (
               <Pill key={s} active={statusFilter.includes(s)} color={STATUS_META[s].color}
                 onClick={() => toggle(statusFilter, s, setStatusFilter)}>
@@ -469,7 +460,7 @@ export default function TripsListPanel() {
           {groups.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Travel Group</span>
+                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{TRIPS_LIST.filterLabels.travelGroup}</span>
               {[...groups].sort((a, b) => a.name.localeCompare(b.name)).map((g) => (
                 <Pill key={g.id} active={groupFilter.includes(g.id)} color={g.color}
                   onClick={() => toggle(groupFilter, g.id, setGroupFilter)}>
@@ -483,7 +474,7 @@ export default function TripsListPanel() {
           {categories.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Travel Type</span>
+                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{TRIPS_LIST.filterLabels.travelType}</span>
               {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
                 <Pill key={c.id} active={categoryFilter.includes(c.id)} color="var(--accent)"
                   onClick={() => toggle(categoryFilter, c.id, setCategoryFilter)}>
@@ -496,7 +487,7 @@ export default function TripsListPanel() {
           {availableYears.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold uppercase tracking-wide shrink-0"
-                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>Year</span>
+                style={{ color: "var(--text-muted)", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{TRIPS_LIST.filterLabels.year}</span>
               {availableYears.map((y) => (
                 <Pill key={y} active={yearFilter.includes(y)} color="var(--accent)"
                   onClick={() => toggle(yearFilter, y, setYearFilter)}>
@@ -512,7 +503,7 @@ export default function TripsListPanel() {
                 onClick={() => { setStatusFilter([]); setYearFilter([]); setGroupFilter([]); setCategoryFilter([]); }}
                 className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-all"
                 style={{ borderColor: "#ef4444", background: "#ef4444", color: "#fff", fontWeight: 600 }}>
-                <X size={10} /> Clear filters
+                <X size={10} /> {TRIPS_LIST.clearFilters}
               </button>
             </div>
           )}
@@ -523,7 +514,7 @@ export default function TripsListPanel() {
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
             <span className="text-3xl">✈️</span>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              {hasLocalFilters ? "No trips match the current filters." : "No trips yet. Add one above."}
+              {hasLocalFilters ? TRIPS_LIST.emptyFiltered : TRIPS_LIST.emptyDefault}
             </p>
           </div>
         ) : (
