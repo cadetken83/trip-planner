@@ -67,16 +67,12 @@ function buildCellLanes(assignments: LaneAssignment[], totalLanes: number, group
   const result: LaneEntry[] = Array(totalLanes).fill(null);
   for (const { trip, lane } of assignments) {
     if (tripTouchesMonth(trip, month, year)) {
-      const hasLeftNeighbor  = month > 0  && assignments.some((a) => a.lane === lane && a.trip.id !== trip.id && tripTouchesMonth(a.trip, month - 1, year));
-      const hasRightNeighbor = month < 11 && assignments.some((a) => a.lane === lane && a.trip.id !== trip.id && tripTouchesMonth(a.trip, month + 1, year));
       result[lane] = {
         trip,
         group: groups.find((g) => g.id === trip.groupId),
         position: getPosition(month, year,
           trip.scheduled!.startMonth, trip.scheduled!.startYear,
           trip.scheduled!.endMonth,   trip.scheduled!.endYear),
-        hasLeftNeighbor,
-        hasRightNeighbor,
       };
     }
   }

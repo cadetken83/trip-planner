@@ -15,15 +15,12 @@ type Props = {
   trip: Trip;
   group: Group | undefined;
   position: BarPosition;
-  hasLeftNeighbor?: boolean;
-  hasRightNeighbor?: boolean;
 };
 
 export const BAR_HEIGHT = 72;
 
 // Distance each bar must bleed to bridge the inter-cell gap
-const BLEED  = 14;
-const EXPAND = 44;
+const BLEED = 14;
 
 function isBookByOverdue(trip: Trip): boolean {
   if (!trip.bookBy || trip.status === "booked" || trip.status === "completed") return false;
@@ -32,7 +29,7 @@ function isBookByOverdue(trip: Trip): boolean {
   return limit < now;
 }
 
-export default function TripBar({ trip, group, position, hasLeftNeighbor = false, hasRightNeighbor = false }: Props) {
+export default function TripBar({ trip, group, position }: Props) {
   const { unscheduleTrip, bookTrip, unbookTrip, categories } = useTripStore();
   const blackoutDates = useTripStore((s) => s.blackoutDates);
   const [hovered,              setHovered]              = useState(false);
@@ -119,12 +116,8 @@ export default function TripBar({ trip, group, position, hasLeftNeighbor = false
   // Background: image only on start/single anchor segment; middle/end use colour wash
   const hasImage = !!trip.imageUrl;
 
-  // Expand into adjacent cells only when no same-lane neighbor would cause overlap;
-  // image start bars always use BLEED left so the image doesn't bleed into the prior month.
-  const expandLeft  = !hasImage && (position === "single" ? !hasLeftNeighbor : position === "start" && !hasLeftNeighbor);
-  const expandRight = position === "single" && !hasRightNeighbor;
-  const marginLeft  = expandLeft  ? `-${EXPAND}px` : `-${BLEED}px`;
-  const marginRight = expandRight ? `-${EXPAND}px` : `-${BLEED}px`;
+  const marginLeft  = `-${BLEED}px`;
+  const marginRight = `-${BLEED}px`;
   let barBg: string;
   if (hasImage && isStart) {
     barBg = `linear-gradient(rgba(0,0,0,0.28), rgba(0,0,0,0.28)), url(${trip.imageUrl}) center/cover no-repeat`;

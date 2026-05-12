@@ -14,8 +14,6 @@ export type LaneEntry = {
   trip: Trip;
   group: Group | undefined;
   position: BarPosition;
-  hasLeftNeighbor: boolean;
-  hasRightNeighbor: boolean;
 } | null;
 
 // Bar height + gap between bars
@@ -83,7 +81,7 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
         gap: 0,
         overflow: "visible",  // allow bar bleed across gap
         position: "relative",
-        zIndex: hasAnyTrip ? 2 : 1,
+        zIndex: 2,
       }}
     >
       {/* Blackout shading overlay */}
@@ -148,8 +146,6 @@ export default function MonthCell({ month, year, lanes, isCurrentMonth, blackout
               trip={lane.trip}
               group={lane.group}
               position={lane.position}
-              hasLeftNeighbor={lane.hasLeftNeighbor}
-              hasRightNeighbor={lane.hasRightNeighbor}
             />
           )
         )}
