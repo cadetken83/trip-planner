@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import PlannerView from "@/components/PlannerView";
@@ -28,7 +28,7 @@ type LocalSnapshot = {
   blackoutDates?: unknown[];
 } | null;
 
-export default function Home() {
+function HomeContent() {
   const { isLoaded: authLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -409,5 +409,13 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   );
 }
