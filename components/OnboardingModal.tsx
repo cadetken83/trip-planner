@@ -78,7 +78,7 @@ function VisualAddTrip() {
             Unscheduled Trips
           </span>
           <span style={{
-            background: "var(--accent)", color: "#000", borderRadius: "50%",
+            background: "var(--btn-primary)", color: "var(--btn-primary-text)", borderRadius: "50%",
             width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 14, fontWeight: 700, lineHeight: 1,
             boxShadow: "0 0 0 3px var(--accent-dim)",
@@ -135,7 +135,7 @@ function VisualSchedule() {
           ))}
         </div>
         <div style={{
-          height: 7, background: "var(--accent)", opacity: 0.85,
+          height: 7, background: "var(--btn-primary)", opacity: 0.85,
           borderRadius: 4, width: "68%", marginLeft: "4%",
         }} />
       </div>
@@ -174,7 +174,7 @@ function VisualEditModal() {
             height: 22, width: 55, background: "var(--surface-2)",
             border: "1px solid var(--border)", borderRadius: 4,
           }} />
-          <div style={{ height: 22, width: 80, background: "var(--accent)", borderRadius: 4 }} />
+          <div style={{ height: 22, width: 80, background: "var(--btn-primary)", borderRadius: 4 }} />
         </div>
       </div>
     </div>
