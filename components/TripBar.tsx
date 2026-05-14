@@ -6,8 +6,9 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Trip, Group } from "@/types";
 import { useTripStore } from "@/store/useTripStore";
-import { X, Check, RotateCcw, AlertTriangle, Ban, ChevronUp, ChevronDown } from "lucide-react";
+import { X, Check, RotateCcw, AlertTriangle, Ban, ChevronUp, ChevronDown, Sparkles, Lock } from "lucide-react";
 import TripEditModal from "@/components/TripEditModal";
+import { TRIP_CARD } from "@/lib/content";
 
 export type BarPosition = "start" | "middle" | "end" | "single";
 
@@ -65,6 +66,9 @@ export default function TripBar({ trip, group, position }: Props) {
 
   const category = categories.find((c) => c.id === trip.categoryId);
   const overdue  = isBookByOverdue(trip);
+  const isRecentlyUpdated = trip.updatedAt
+    ? Date.now() - new Date(trip.updatedAt).getTime() < 3 * 24 * 60 * 60 * 1000
+    : false;
 
   const conflictingBlackouts = (() => {
     if (!trip.scheduled) return [];
@@ -145,8 +149,10 @@ export default function TripBar({ trip, group, position }: Props) {
     : (textOnBar ? "rgba(255,255,255,0.6)"  : `${color}88`);
 
   // Title right offset reserves space for the indicator cluster (top-right)
-  const titleRight = (hasBlackoutConflict && overdue) ? 52
-    : (hasBlackoutConflict || overdue) ? 36
+  const sparklePrivateW = (isRecentlyUpdated ? 15 : 0) + (trip.isPrivate ? 15 : 0);
+  const titleRight = (hasBlackoutConflict && overdue) ? 52 + sparklePrivateW
+    : (hasBlackoutConflict || overdue) ? 36 + sparklePrivateW
+    : sparklePrivateW > 0 ? 10 + sparklePrivateW
     : 10;
 
   return (
@@ -189,7 +195,7 @@ export default function TripBar({ trip, group, position }: Props) {
         )}
 
         {/* ── Status indicators (top-right cluster) ── */}
-        {isStart && (hasBlackoutConflict || overdue) && (
+        {isStart && (hasBlackoutConflict || overdue || isRecentlyUpdated || trip.isPrivate) && (
           <div style={{
             position: "absolute", top: 8, right: 10,
             display: "flex", flexDirection: "row", gap: 4, alignItems: "center",
@@ -311,6 +317,16 @@ export default function TripBar({ trip, group, position }: Props) {
                   document.body
                 )}
               </>
+            )}
+            {isRecentlyUpdated && (
+              <span title={TRIP_CARD.recentlyUpdated} style={{ lineHeight: 0 }}>
+                <Sparkles size={11} style={{ color: "#facc15", filter: "drop-shadow(0 0 2px rgba(0,0,0,0.5))" }} />
+              </span>
+            )}
+            {trip.isPrivate && (
+              <span title={TRIP_CARD.privateIndicator} style={{ lineHeight: 0 }}>
+                <Lock size={10} style={{ color: textColor, opacity: 0.8 }} />
+              </span>
             )}
           </div>
         )}

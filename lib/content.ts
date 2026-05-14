@@ -25,7 +25,7 @@ export const ONBOARDING = {
   steps: [
     {
       title: "Welcome to Wanderlist",
-      body:  "Wanderlist is your visual travel planner — collect trip ideas, schedule them on a shared calendar, and track everything from wishlist to booked. This short tour covers the key features. You can reopen it anytime from the ? button in the nav.",
+      body:  "Wanderlist is your 'bucket list' travel planner — collect trip ideas, schedule them on a multi-year calendar, and track trip planning from wishlist to booked. This short tour covers key features. You can reopen it anytime from the ? button in the nav.",
     },
     {
       title: "Add & Organize Your Trips",
@@ -38,6 +38,10 @@ export const ONBOARDING = {
     {
       title: "Click Any Trip to Edit Details",
       body:  "Click a trip bar on the calendar (or a card in the sidebar) to open the details panel. Set the status from Planning to Booked, add notes, estimated cost, a Book By deadline, and more.",
+    },
+    {
+      title: "Collaborate with Friends & Family",
+      body:  "Share your workspace by sending an invite link from the workspace menu — friends and family join as editors and see all your trips in real time. Mark any trip Private to hide it from collaborators. A sparkle badge on a card means someone updated it in the last three days.",
     },
     {
       title: "Explore Every View",
@@ -73,6 +77,8 @@ export const TRIP_EDIT = {
     bookByDate:    "Book By Date",
     imageUrl:      "Image URL",
     notes:         "Notes",
+    isPrivate:     "Private (only visible to you)",
+    lastUpdatedBy: "Last updated by",
   },
   placeholders: {
     tripName:    "Trip name",
@@ -165,9 +171,11 @@ export const TRIP_SIDEBAR = {
 // ─── Trip card (components/TripCard.tsx) ──────────────────────────────────────
 
 export const TRIP_CARD = {
-  noGroup:         "No group",
-  bookOverdue:     "Booking overdue",
-  blackoutOverlap: "Overlaps a blackout period",
+  noGroup:          "No group",
+  bookOverdue:      "Booking overdue",
+  blackoutOverlap:  "Overlaps a blackout period",
+  privateIndicator: "Private trip",
+  recentlyUpdated:  "Recently updated",
 };
 
 // ─── Past trip prompt (components/PastTripPrompt.tsx) ─────────────────────────
@@ -204,6 +212,52 @@ export const SETTINGS = {
       subtitle: "Set your appearance and navigation preferences.",
     },
   },
+};
+
+// ─── Migration modal (components/MigrationModal.tsx) ─────────────────────────
+
+export const MIGRATION = {
+  title:        "Your trips are ready to import",
+  body:         "We found trips saved on this device from before you signed in. Import them into your account so they're backed up and available everywhere.",
+  importButton: "Import my trips",
+  skipButton:   "Skip for now",
+  importing:    "Importing your trips…",
+  successTitle: "All imported!",
+  successBody:  "Your trips are now saved to your account and will sync across devices.",
+  errorTitle:   "Import failed",
+  errorBody:    "Something went wrong. Your local data is still safe — try again, or skip and import later.",
+  doneButton:   "Continue",
+};
+
+// ─── Workspace switcher (components/WorkspaceSwitcher.tsx) ───────────────────
+
+export const WORKSPACE = {
+  newWorkspace:      "New workspace",
+  createPlaceholder: "Workspace name…",
+  createButton:      "Create",
+  saveButton:        "Save",
+  cancelButton:      "Cancel",
+  // {name} is replaced with the workspace name at runtime
+  deleteConfirm:     "Are you sure you want to delete \"{name}\"? All trips and data in this workspace will be permanently removed.",
+
+  // ─── Sharing / members modal ──────────────────────────────────────────────
+  shareTitle:       "Share workspace",
+  inviteSection:    "Invite link",
+  copyLink:         "Copy",
+  resetLink:        "Reset link (invalidates old link)",
+  membersSection:   "Members",
+  roleLabels: {
+    owner:  "Owner",
+    editor: "Editor",
+    viewer: "Viewer",
+  },
+  removeMember:     "Remove from workspace",
+  // ─── Join page (/join/[code]) ─────────────────────────────────────────────
+  joinTitle:        "You've been invited!",
+  joinBody:         "Join this shared Wanderlist workspace:",
+  joinButton:       "Join workspace",
+  alreadyMember:    "You're already a member",
+  newBadge:         "New",
 };
 
 // ─── Shared data constants ─────────────────────────────────────────────────────

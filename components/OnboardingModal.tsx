@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   X, GripVertical, ChevronRight,
   CalendarDays, List, Clock, Settings, Download, Upload,
+  Share2, Lock, Sparkles,
 } from "lucide-react";
 import { useTripStore } from "@/store/useTripStore";
 import { ONBOARDING } from "@/lib/content";
@@ -180,6 +181,65 @@ function VisualEditModal() {
   );
 }
 
+function VisualCollaborate() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Workspace bar */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6,
+        background: "var(--surface-2)", border: "1px solid var(--border)",
+        borderRadius: 6, padding: "6px 10px",
+      }}>
+        <span style={{ fontSize: 9, color: "var(--text-primary)", flex: 1 }}>My Family Workspace</span>
+        <Share2 size={10} color="var(--accent)" />
+      </div>
+
+      {/* Overlapping avatars */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        {["K", "M", "J"].map((initial, i) => (
+          <div key={initial} style={{
+            width: 22, height: 22, borderRadius: "50%",
+            background: "var(--accent-dim)", color: "var(--accent)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 8, fontWeight: 700,
+            border: "2px solid var(--surface-1)",
+            marginLeft: i > 0 ? -7 : 0,
+          }}>{initial}</div>
+        ))}
+        <span style={{ fontSize: 8, color: "var(--text-muted)", marginLeft: 8 }}>3 members</span>
+      </div>
+
+      {/* Two mini trip cards */}
+      <div style={{ display: "flex", gap: 6 }}>
+        {/* Private trip */}
+        <div style={{
+          flex: 1, background: "var(--surface-2)", border: "1px solid var(--border)",
+          borderRadius: 5, overflow: "hidden", position: "relative",
+        }}>
+          <div style={{ height: 28, background: "var(--surface-3)", position: "relative" }}>
+            <div style={{ position: "absolute", bottom: 3, right: 3 }}>
+              <Lock size={8} color="#fff" style={{ opacity: 0.9 }} />
+            </div>
+          </div>
+          <div style={{ padding: "4px 5px", fontSize: 7, color: "var(--text-muted)" }}>Solo Road Trip</div>
+        </div>
+        {/* Recently updated trip */}
+        <div style={{
+          flex: 1, background: "var(--surface-2)", border: "1px solid var(--border)",
+          borderRadius: 5, overflow: "hidden", position: "relative",
+        }}>
+          <div style={{ height: 28, background: "var(--surface-3)", position: "relative" }}>
+            <div style={{ position: "absolute", bottom: 3, right: 3 }}>
+              <Sparkles size={8} color="#facc15" />
+            </div>
+          </div>
+          <div style={{ padding: "4px 5px", fontSize: 7, color: "var(--text-muted)" }}>Tokyo Adventure</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VisualExplore() {
   const tabs = [
     { label: "Timeline", icon: <CalendarDays size={9} />, active: true },
@@ -227,7 +287,7 @@ function VisualExplore() {
 
 type Step = { title: string; body: string; Visual: React.FC };
 
-const VISUALS: React.FC[] = [VisualWelcome, VisualAddTrip, VisualSchedule, VisualEditModal, VisualExplore];
+const VISUALS: React.FC[] = [VisualWelcome, VisualAddTrip, VisualSchedule, VisualEditModal, VisualCollaborate, VisualExplore];
 
 const STEPS: Step[] = ONBOARDING.steps.map((s, i) => ({ ...s, Visual: VISUALS[i] }));
 

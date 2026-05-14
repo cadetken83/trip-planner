@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Trip, Group } from "@/types";
-import { MapPin, Clock, GripVertical, Trash2 } from "lucide-react";
+import { Lock, MapPin, Clock, GripVertical, Sparkles, Trash2 } from "lucide-react";
 import TripEditModal from "@/components/TripEditModal";
 import { useTripStore } from "@/store/useTripStore";
 import { TRIP_CARD } from "@/lib/content";
@@ -30,6 +30,9 @@ export default function TripCard({ trip, group, sortHandleProps }: Props) {
 
   const groupColor = group?.color ?? "#78716c";
   const hasImage = !!trip.imageUrl;
+  const isRecentlyUpdated = trip.updatedAt
+    ? Date.now() - new Date(trip.updatedAt).getTime() < 3 * 24 * 60 * 60 * 1000
+    : false;
   const imageBg = hasImage
     ? `linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.55) 100%), url(${trip.imageUrl}) center/cover no-repeat`
     : `linear-gradient(135deg, ${groupColor}33 0%, ${groupColor}11 100%)`;
@@ -70,6 +73,25 @@ export default function TripCard({ trip, group, sortHandleProps }: Props) {
             >
               <GripVertical size={14} />
             </div>
+
+            {/* Private / recently-updated badges — bottom right */}
+            {(trip.isPrivate || isRecentlyUpdated) && (
+              <div
+                className="absolute bottom-2 right-2 flex items-center gap-1"
+                style={{ background: "rgba(0,0,0,0.45)", borderRadius: 8, padding: "2px 5px" }}
+              >
+                {isRecentlyUpdated && (
+                  <span title={TRIP_CARD.recentlyUpdated} style={{ lineHeight: 0 }}>
+                    <Sparkles size={11} style={{ color: "#facc15" }} />
+                  </span>
+                )}
+                {trip.isPrivate && (
+                  <span title={TRIP_CARD.privateIndicator} style={{ lineHeight: 0 }}>
+                    <Lock size={10} style={{ color: "#fff", opacity: 0.9 }} />
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Card body */}

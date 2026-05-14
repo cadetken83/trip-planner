@@ -5,7 +5,7 @@ import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
 import { Trip, TripStatus } from "@/types";
 import TripEditModal from "@/components/TripEditModal";
 import { inferContinent } from "@/utils/inferContinent";
-import { MapPin, Clock, CalendarDays, BookOpen, Pencil, Check, Tag, X, Plus, AlertTriangle, Ban } from "lucide-react";
+import { MapPin, Clock, CalendarDays, BookOpen, Pencil, Check, Tag, X, Plus, AlertTriangle, Ban, Lock, Sparkles } from "lucide-react";
 import { TRIPS_LIST, TRIP_CARD, MONTH_NAMES_SHORT } from "@/lib/content";
 
 function uid() { return crypto.randomUUID(); }
@@ -63,6 +63,9 @@ function TripCard({ trip }: { trip: Trip }) {
   const overdue      = isBookByOverdue(trip);
   const hasImage     = !!trip.imageUrl;
   const hasConflict  = tripOverlapsBlackout(trip, blackoutDates);
+  const isRecentlyUpdated = trip.updatedAt
+    ? Date.now() - new Date(trip.updatedAt).getTime() < 3 * 24 * 60 * 60 * 1000
+    : false;
 
   // Placeholder gradient when no image
   const imageBg = hasImage
@@ -107,6 +110,25 @@ function TripCard({ trip }: { trip: Trip }) {
               <AlertTriangle size={10} />
               {TRIP_CARD.bookOverdue}
             </span>
+          )}
+
+          {/* Private / recently-updated badges — top left */}
+          {(trip.isPrivate || isRecentlyUpdated) && (
+            <div
+              className="absolute flex items-center gap-1"
+              style={{ top: 10, left: 10, background: "rgba(0,0,0,0.45)", borderRadius: 8, padding: "2px 5px" }}
+            >
+              {isRecentlyUpdated && (
+                <span title={TRIP_CARD.recentlyUpdated} style={{ lineHeight: 0 }}>
+                  <Sparkles size={12} style={{ color: "#facc15" }} />
+                </span>
+              )}
+              {trip.isPrivate && (
+                <span title={TRIP_CARD.privateIndicator} style={{ lineHeight: 0 }}>
+                  <Lock size={11} style={{ color: "#fff", opacity: 0.9 }} />
+                </span>
+              )}
+            </div>
           )}
 
           {/* Title + destination overlaid at bottom of image */}

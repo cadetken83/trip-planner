@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useTripStore } from "@/store/useTripStore";
 import { inferContinent } from "@/utils/inferContinent";
 import { Trip, TripStatus, Continent } from "@/types";
-import { AlertTriangle, X, Trash2, Ban } from "lucide-react";
+import { AlertTriangle, Lock, X, Trash2, Ban } from "lucide-react";
 import { TRIP_EDIT, MONTH_NAMES_LONG, CONTINENTS } from "@/lib/content";
 
 const SCHEDULED_STATUSES: { value: TripStatus; label: string }[] = [
@@ -28,6 +29,7 @@ type Props = {
 };
 
 export default function TripEditModal({ trip, onClose }: Props) {
+  const { user } = useUser();
   const { trips, groups, updateTrip, removeTrip, unscheduleTrip } = useTripStore();
   const categories    = useTripStore((s) => s.categories);
   const currency      = useTripStore((s) => s.budget.currency);
@@ -70,6 +72,8 @@ export default function TripEditModal({ trip, onClose }: Props) {
   const [startYear,  setStartYear]  = useState(trip.scheduled?.startYear  ?? currentYear);
   const [endMonth,   setEndMonth]   = useState(trip.scheduled?.endMonth   ?? new Date().getMonth());
   const [endYear,    setEndYear]    = useState(trip.scheduled?.endYear    ?? currentYear);
+
+  const [isPrivate, setIsPrivate] = useState(trip.isPrivate ?? false);
 
   // Errors / warnings
   const [dupError,         setDupError]         = useState("");
@@ -124,6 +128,8 @@ export default function TripEditModal({ trip, onClose }: Props) {
     return true;
   };
 
+  const currentUserName = user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "";
+
   const buildUpdates = (): Partial<Trip> => ({
     imageUrl: imageUrl.trim() || undefined,
     title: title.trim(),
@@ -136,6 +142,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
     notes: notes.trim() || undefined,
     continent: continent || undefined,
     tags,
+    isPrivate,
     estimatedCost: estimatedCost !== "" ? Math.max(0, parseFloat(estimatedCost)) || undefined : undefined,
     bookBy: showBookBy && localIsScheduled
       ? { month: bookByMonth, year: bookByYear, day: bookByDay ? Number(bookByDay) : undefined }
@@ -143,6 +150,7 @@ export default function TripEditModal({ trip, onClose }: Props) {
     scheduled: localIsScheduled
       ? { startMonth, startYear, endMonth, endYear }
       : undefined,
+    updatedByName: currentUserName || undefined,
   });
 
   const handleSave = () => {
@@ -159,9 +167,10 @@ export default function TripEditModal({ trip, onClose }: Props) {
         groupId, categoryId: categoryId || undefined,
         status: "unscheduled", scheduled: undefined, bookBy: undefined,
         durationWeeks, notes: notes.trim() || undefined,
-        continent: continent || undefined, tags,
+        continent: continent || undefined, tags, isPrivate,
         estimatedCost: estimatedCost !== "" ? Math.max(0, parseFloat(estimatedCost)) || undefined : undefined,
         imageUrl: imageUrl.trim() || undefined,
+        updatedByName: currentUserName || undefined,
       });
       onClose();
       return;
@@ -575,6 +584,37 @@ export default function TripEditModal({ trip, onClose }: Props) {
               value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder={TRIP_EDIT.placeholders.notes} />
           </div>
+
+          {/* Private toggle */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div
+              onClick={() => setIsPrivate((v) => !v)}
+              className="w-8 h-4 rounded-full relative transition-colors"
+              style={{ background: isPrivate ? "var(--accent)" : "var(--surface-3)", border: "1px solid var(--border)", flexShrink: 0 }}
+            >
+              <div
+                className="absolute top-0.5 w-3 h-3 rounded-full transition-transform"
+                style={{
+                  background: isPrivate ? "#fff" : "var(--text-muted)",
+                  left: isPrivate ? "calc(100% - 14px)" : "1px",
+                }}
+              />
+            </div>
+            <Lock size={11} style={{ color: isPrivate ? "var(--accent)" : "var(--text-muted)" }} />
+            <span className="text-xs" style={{ color: isPrivate ? "var(--text-primary)" : "var(--text-muted)" }}>
+              {TRIP_EDIT.labels.isPrivate}
+            </span>
+          </label>
+
+          {/* Last updated */}
+          {trip.updatedByName && trip.updatedAt && (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {TRIP_EDIT.labels.lastUpdatedBy}{" "}
+              <span style={{ color: "var(--text-secondary)" }}>{trip.updatedByName}</span>
+              {" · "}
+              {new Date(trip.updatedAt).toLocaleDateString()} {new Date(trip.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
         </div>
 
         {/* Footer */}

@@ -87,6 +87,13 @@ export type Trip = {
   notes?: string;
   tags?: string[];
   imageUrl?: string;
+  // Collaboration fields (undefined when store not yet initialized)
+  workspaceId?: string;
+  isPrivate?: boolean;
+  createdBy?: string;
+  updatedBy?: string;
+  updatedByName?: string;
+  updatedAt?: string;
 };
 
 // ─── Filter State ─────────────────────────────────────────────────────────────
@@ -132,3 +139,22 @@ export type BlackoutDate = {
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 export type Theme = "dark" | "light";
+
+// ─── Collaboration ────────────────────────────────────────────────────────────
+
+export type WorkspaceRole = "owner" | "editor" | "viewer";
+
+export type Workspace = {
+  id: string;
+  name: string;
+  ownerId: string;
+  inviteCode: string;
+  createdAt: string;
+};
+
+export type WorkspaceMember = {
+  workspaceId: string;
+  userId: string;
+  role: WorkspaceRole;
+  joinedAt: string;
+};

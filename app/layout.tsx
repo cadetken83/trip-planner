@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Playfair_Display } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -12,23 +13,25 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${playfair.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            try {
-              const stored = JSON.parse(localStorage.getItem('trip-planner-storage') || '{}');
-              const theme = stored?.state?.theme || 'light';
-              document.documentElement.setAttribute('data-theme', theme);
-            } catch(e) {
-              document.documentElement.setAttribute('data-theme', 'light');
-            }
-          `
-        }} />
-      </head>
-      <body className="antialiased" suppressHydrationWarning>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider afterSignOutUrl="/sign-in">
+      <html lang="en" className={`${geist.variable} ${playfair.variable}`} suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const stored = JSON.parse(localStorage.getItem('wanderlist-ui') || '{}');
+                const theme = stored?.state?.theme || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+              } catch(e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+              }
+            `
+          }} />
+        </head>
+        <body className="antialiased" suppressHydrationWarning>
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
