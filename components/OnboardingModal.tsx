@@ -471,9 +471,9 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
               <button
                 onClick={handleNext}
                 style={{
-                  background: "var(--accent)", border: "none",
+                  background: "var(--btn-primary)", border: "none",
                   borderRadius: 6, padding: "6px 18px", cursor: "pointer",
-                  fontSize: 13, fontWeight: 600, color: "#000",
+                  fontSize: 13, fontWeight: 600, color: "var(--btn-primary-text)",
                 }}
               >
                 {isLast ? ONBOARDING.buttons.getStarted : ONBOARDING.buttons.next}

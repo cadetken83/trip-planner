@@ -44,6 +44,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Remove seeded example trips before importing so they don't persist if the
+  // user's export file intentionally excluded them.
+  if (trips.length) {
+    await db
+      .from("trips")
+      .delete()
+      .eq("workspace_id", workspaceId)
+      .contains("tags", ["example"]);
+  }
+
   // Upsert all data — safe to re-run if migration is interrupted
   const results = await Promise.allSettled([
     trips.length
