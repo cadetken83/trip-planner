@@ -123,6 +123,7 @@ type TripStore = {
 
   // ── Lifecycle ──
   init: (workspaceId: string, userId: string) => Promise<void>;
+  initGuest: () => void;
   cleanup: () => void;
 
   // ── Trip actions ──
@@ -243,6 +244,56 @@ export const useTripStore = create<TripStore>()(
         }));
 
         set({ trips, tripOrder, groups, categories, budget, blackoutDates, isLoading: false });
+      },
+
+      initGuest: () => {
+        const state = get();
+        if (state.currentUserId === "guest" && state.trips.length > 0) {
+          set({ isLoading: false });
+          return;
+        }
+        const seedTrips: Trip[] = [
+          {
+            id: crypto.randomUUID(), workspaceId: "guest",
+            title: "Tokyo Adventure", destination: "Tokyo, Japan",
+            continent: "Asia", groupId: "family", categoryId: "city",
+            status: "unscheduled", durationWeeks: 2, tags: ["food", "culture", "example"],
+            imageUrl: "https://wallpapertag.com/wallpaper/full/2/f/e/519365-large-japanese-scenery-wallpaper-2048x1401.jpg",
+          },
+          {
+            id: crypto.randomUUID(), workspaceId: "guest",
+            title: "Amalfi Coast", destination: "Amalfi, Italy",
+            continent: "Europe", groupId: "couples", categoryId: "beach",
+            status: "unscheduled", durationWeeks: 1, tags: ["food", "example"],
+            imageUrl: "https://wallpaperaccess.com/full/2122279.jpg",
+          },
+          {
+            id: crypto.randomUUID(), workspaceId: "guest",
+            title: "Patagonia Trek", destination: "Patagonia, Argentina",
+            continent: "South America", groupId: "solo", categoryId: "hiking",
+            status: "unscheduled", durationWeeks: 3, tags: ["example"],
+            imageUrl: "https://cdn.pixabay.com/photo/2022/11/25/20/11/argentina-7616819_1280.jpg",
+          },
+          {
+            id: crypto.randomUUID(), workspaceId: "guest",
+            title: "Safari", destination: "Serengeti, Tanzania",
+            continent: "Africa", groupId: "family", categoryId: "safari",
+            status: "unscheduled", durationWeeks: 2, tags: ["example"],
+            imageUrl: "https://www.theluxeinsider.com/wp-content/uploads/2022/12/african-savannah.jpeg",
+          },
+        ];
+        set({
+          currentUserId: "guest",
+          currentWorkspaceId: null,
+          isLoading: false,
+          hasSeenOnboarding: state.seenOnboardingByUser["guest"] ?? false,
+          trips: seedTrips,
+          tripOrder: seedTrips.map((t) => t.id),
+          groups: DEFAULT_GROUPS,
+          categories: DEFAULT_CATEGORIES,
+          budget: DEFAULT_BUDGET,
+          blackoutDates: [],
+        });
       },
 
       cleanup: () => {
@@ -547,7 +598,20 @@ export const useTripStore = create<TripStore>()(
 
       importData: async (data) => {
         const { currentWorkspaceId, currentUserId } = get();
-        if (!currentWorkspaceId || !currentUserId) return;
+        if (!currentWorkspaceId || !currentUserId) {
+          if (currentUserId === "guest") {
+            const current = get();
+            set({
+              trips: data.trips ?? [],
+              tripOrder: data.tripOrder ?? (data.trips ?? []).map((t: Trip) => t.id),
+              groups: data.groups?.length ? data.groups : current.groups,
+              categories: data.categories?.length ? data.categories : current.categories,
+              budget: data.budget ?? current.budget,
+              blackoutDates: data.blackoutDates ?? [],
+            });
+          }
+          return;
+        }
         await fetch("/api/migrate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -558,13 +622,22 @@ export const useTripStore = create<TripStore>()(
     }),
     {
       name: "wanderlist-ui",
-      // Only persist UI state to localStorage — trip data lives in Supabase
+      // Persist UI state always; persist trip data only in guest mode (Supabase handles it for auth users)
       partialize: (s) => ({
         theme: s.theme,
         filters: s.filters,
         defaultView: s.defaultView,
         seenOnboardingByUser: s.seenOnboardingByUser,
         currentWorkspaceId: s.currentWorkspaceId,
+        ...(s.currentUserId === "guest" ? {
+          currentUserId: s.currentUserId,
+          trips: s.trips,
+          tripOrder: s.tripOrder,
+          groups: s.groups,
+          categories: s.categories,
+          budget: s.budget,
+          blackoutDates: s.blackoutDates,
+        } : {}),
       }),
     }
   )

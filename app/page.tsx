@@ -15,7 +15,7 @@ import WorkspaceSwitcher, { type WorkspaceEntry } from "@/components/WorkspaceSw
 import { useTripStore } from "@/store/useTripStore";
 import { CalendarDays, Clock, Download, List, Moon, Settings, Sun, Upload, WifiOff } from "lucide-react";
 import WanderlistIcon from "@/components/WanderlistIcon";
-import { NAV } from "@/lib/content";
+import { GUEST, NAV } from "@/lib/content";
 
 type View = "planner" | "trips" | "history" | "budget";
 
@@ -52,7 +52,7 @@ function HomeContent() {
   const {
     theme, toggleTheme, defaultView, setDefaultView,
     trips, tripOrder, groups, categories, budget, blackoutDates,
-    importData, hasSeenOnboarding, init, cleanup,
+    importData, hasSeenOnboarding, init, initGuest, cleanup,
     currentWorkspaceId: persistedWorkspaceId,
   } = useTripStore();
 
@@ -111,59 +111,80 @@ function HomeContent() {
 
   // ── Workspace init ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!authLoaded || !isSignedIn || !user) return;
+    if (!authLoaded) return;
 
-    async function bootstrap() {
-      // 1. List all workspaces the user belongs to
-      let listRes = await fetch("/api/workspaces");
-      if (!listRes.ok) { console.error("Could not list workspaces"); return; }
-      let { workspaces: wsList } = await listRes.json() as { workspaces: WorkspaceEntry[] };
+    if (isSignedIn && user) {
+      async function bootstrap() {
+        // ── Capture guest data before init() overwrites the store ──────────────
+        const guestState = useTripStore.getState();
+        if (guestState.currentUserId === "guest" && guestState.trips.length > 0) {
+          setMigrationData({
+            trips: guestState.trips,
+            tripOrder: guestState.tripOrder,
+            groups: guestState.groups,
+            categories: guestState.categories,
+            budget: guestState.budget,
+            blackoutDates: guestState.blackoutDates,
+          });
+          setShowMigration(true);
+        }
 
-      // 2. No workspaces yet — create personal workspace for new users
-      if (!wsList.length) {
-        const personalRes = await fetch("/api/workspace/personal");
-        if (!personalRes.ok) { console.error("Could not create personal workspace"); return; }
-        listRes = await fetch("/api/workspaces");
-        if (!listRes.ok) { console.error("Could not list workspaces after creation"); return; }
-        ({ workspaces: wsList } = await listRes.json() as { workspaces: WorkspaceEntry[] });
+        // 1. List all workspaces the user belongs to
+        let listRes = await fetch("/api/workspaces");
+        if (!listRes.ok) { console.error("Could not list workspaces"); return; }
+        let { workspaces: wsList } = await listRes.json() as { workspaces: WorkspaceEntry[] };
+
+        // 2. No workspaces yet — create personal workspace for new users
+        if (!wsList.length) {
+          const personalRes = await fetch("/api/workspace/personal");
+          if (!personalRes.ok) { console.error("Could not create personal workspace"); return; }
+          listRes = await fetch("/api/workspaces");
+          if (!listRes.ok) { console.error("Could not list workspaces after creation"); return; }
+          ({ workspaces: wsList } = await listRes.json() as { workspaces: WorkspaceEntry[] });
+        }
+
+        setWorkspaces(wsList);
+
+        // 3. Pick workspace: last-used (persisted) if still valid, else first
+        const target = wsList.find((w) => w.id === persistedWorkspaceId) ?? wsList[0];
+        setWorkspaceId(target.id);
+
+        // 4. Init the store — fetches all data from Supabase
+        await init(target.id, user!.id);
+        setStoreReady(true);
+
+        // 5. Restore last-used view from persisted UI state (localStorage)
+        setView(defaultView);
+
+        // 6. Check for legacy localStorage data to migrate
+        try {
+          const raw = localStorage.getItem("trip-planner-storage");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const state = parsed?.state;
+            if (Array.isArray(state?.trips) && state.trips.length > 0) {
+              setMigrationData({
+                trips: state.trips,
+                tripOrder: state.tripOrder ?? [],
+                groups: state.groups ?? [],
+                categories: state.categories ?? [],
+                budget: state.budget,
+                blackoutDates: state.blackoutDates ?? [],
+              });
+              setShowMigration(true);
+            }
+          }
+        } catch { /* ignore malformed localStorage */ }
       }
 
-      setWorkspaces(wsList);
-
-      // 3. Pick workspace: last-used (persisted) if still valid, else first
-      const target = wsList.find((w) => w.id === persistedWorkspaceId) ?? wsList[0];
-      setWorkspaceId(target.id);
-
-      // 4. Init the store — fetches all data from Supabase
-      await init(target.id, user!.id);
+      bootstrap();
+      return cleanup;
+    } else {
+      // Guest mode — use localStorage-backed in-memory store, no API calls
+      initGuest();
       setStoreReady(true);
-
-      // 5. Restore last-used view from persisted UI state (localStorage)
       setView(defaultView);
-
-      // 4. Check for legacy localStorage data to migrate
-      try {
-        const raw = localStorage.getItem("trip-planner-storage");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const state = parsed?.state;
-          if (Array.isArray(state?.trips) && state.trips.length > 0) {
-            setMigrationData({
-              trips: state.trips,
-              tripOrder: state.tripOrder ?? [],
-              groups: state.groups ?? [],
-              categories: state.categories ?? [],
-              budget: state.budget,
-              blackoutDates: state.blackoutDates ?? [],
-            });
-            setShowMigration(true);
-          }
-        }
-      } catch { /* ignore malformed localStorage */ }
     }
-
-    bootstrap();
-    return cleanup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoaded, isSignedIn, user?.id]);
 
@@ -233,6 +254,16 @@ function HomeContent() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: "var(--surface-0)" }}>
+
+      {/* ── Guest banner ── */}
+      {!isSignedIn && (
+        <div
+          className="flex items-center px-6 py-2 text-sm shrink-0"
+          style={{ background: "var(--accent-dim)", color: "var(--accent)" }}
+        >
+          <span>{GUEST.banner}</span>
+        </div>
+      )}
 
       {/* ── Offline banner ── */}
       {!isOnline && (
@@ -379,7 +410,17 @@ function HomeContent() {
           <div className="w-px h-4 mx-2" style={{ background: "var(--border)" }} />
 
           {/* Clerk user button — avatar, sign-out, account management */}
-          <UserButton />
+          {isSignedIn ? (
+            <UserButton />
+          ) : (
+            <a
+              href="/sign-in"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+              style={{ background: "var(--accent)", color: "#fff" }}
+            >
+              {GUEST.signInCta}
+            </a>
+          )}
         </nav>
       </header>
 

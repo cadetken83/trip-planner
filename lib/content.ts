@@ -260,6 +260,11 @@ export const WORKSPACE = {
   newBadge:         "New",
 };
 
+export const GUEST = {
+  banner:    "Guest mode — sign up to sync across devices and collaborate.",
+  signInCta: "Create account",
+};
+
 // ─── Shared data constants ─────────────────────────────────────────────────────
 // These replace duplicated arrays scattered across components.
 
