@@ -5,6 +5,7 @@ import { useTripStore, tripOverlapsBlackout } from "@/store/useTripStore";
 import { Trip, BlackoutDate, TripCategory, Group } from "@/types";
 import { AlertTriangle, Ban, Check, ChevronDown, ChevronRight, Monitor, Pencil, Plus, Star, Tag, Trash2, Users, Wallet, X } from "lucide-react";
 import { SETTINGS, MONTH_NAMES_SHORT } from "@/lib/content";
+import { EmojiPicker } from "@/components/EmojiPicker";
 
 const MONTHS = MONTH_NAMES_SHORT;
 
@@ -1041,14 +1042,7 @@ export default function BudgetPanel() {
               {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => editCatId === c.id ? (
                 <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg flex-wrap"
                   style={{ background: "var(--surface-3)", border: "1px solid var(--accent)" }}>
-                  <input
-                    className="text-sm rounded-md px-2 py-1 outline-none w-14 text-center"
-                    style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                    value={editCatIcon}
-                    onChange={(e) => setEditCatIcon(e.target.value)}
-                    placeholder="🏖️"
-                    maxLength={4}
-                  />
+                  <EmojiPicker value={editCatIcon} onChange={setEditCatIcon} />
                   <input
                     className="text-sm rounded-md px-2 py-1 outline-none flex-1 min-w-[120px]"
                     style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
@@ -1094,14 +1088,7 @@ export default function BudgetPanel() {
           <div className="flex flex-wrap gap-2 items-end">
             <div className="flex flex-col gap-1">
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>Icon</span>
-              <input
-                className="text-sm rounded-md px-2 py-1.5 outline-none w-14 text-center"
-                style={{ background: "var(--surface-3)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                placeholder="🏖️"
-                value={newCatIcon}
-                onChange={(e) => { setNewCatIcon(e.target.value); setNewCatError(""); }}
-                maxLength={4}
-              />
+              <EmojiPicker value={newCatIcon} onChange={(v) => { setNewCatIcon(v); setNewCatError(""); }} />
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>Name</span>
